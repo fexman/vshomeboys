@@ -1,0 +1,294 @@
+Buildfile: C:\Users\Felix\Entwicklung\dslab13\build.xml
+
+compile:
+
+test:
+    [junit] Running test.ApiTest
+    [junit] 00_login_test.txt
+    [junit] 10:55:29.202		client> !login alice 12345
+    [junit] Proxy[TH17] Spawned, serving: 127.0.0.1 ...
+    [junit] Proxy[TH17] Got login request for: alice
+    [junit] 10:55:29.224		client: !login success
+    [junit] 10:55:29.701		client> !credits
+    [junit] Proxy[TH17] Got credits request.
+    [junit] 10:55:29.704		client: !credits 200
+    [junit] 10:55:30.201		proxy> !users
+    [junit] 10:55:30.203		proxy:
+    [junit] 10:55:30.203		1. bill            offline           200
+    [junit] 10:55:30.203		2. alice           online            200
+    [junit] 10:55:30.701		proxy> !exit
+    [junit] FileListener going down ... !
+    [junit] Proxy[TH17] Lost connection to client 127.0.0.1 ...
+    [junit] ProxyTcpListener:TcpListener going down ... !
+    [junit] Proxy[TH17] Running out ...
+    [junit] 10:55:30.702		proxy: 
+    [junit] 10:55:31.202		client> !exit
+    [junit] Goodbye.
+    [junit] 10:55:31.206		client: 
+    [junit] 10:55:31.702		fs1> !exit
+    [junit] FileServer.ReportOnlineStatus exit() called!
+    [junit] Fileserver going down ... !
+    [junit] FileServerTcpListener:TcpListener going down ... !
+    [junit] 10:55:31.703		fs1: 
+    [junit] ################################################################################
+    [junit] 01_simpletest_sim_test.txt
+    [junit] 10:55:38.209		client> !login alice 12345
+    [junit] Proxy[TH27] Spawned, serving: 127.0.0.1 ...
+    [junit] Proxy[TH27] Got login request for: alice
+    [junit] 10:55:38.212		client: !login success
+    [junit] 10:55:38.709		client> !credits
+    [junit] Proxy[TH27] Got credits request.
+    [junit] 10:55:38.710		client: !credits 200
+    [junit] 10:55:39.209		client> !download short.txt
+    [junit] Proxy[TH27] Got download request for: short.txt
+    [junit] FileServer[TH29] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH29] Got info request for: short.txt
+    [junit] FileServer[TH29] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH29] Running out ...
+    [junit] FileServer[TH31] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH31] Got version request for: short.txt
+    [junit] FileServer[TH31] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH31] Running out ...
+    [junit] FileServer[TH32] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH32] Got download request for file: files/fileserver1/short.txt
+    [junit] FileServer[TH32] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH32] Running out ...
+    [junit] 10:55:39.232		client: !data dslab13
+    [junit] 10:55:39.710		client> !credits
+    [junit] Proxy[TH27] Got credits request.
+    [junit] 10:55:39.711		client: !credits 192
+    [junit] 10:55:40.211		client> !upload upload.txt
+    [junit] Proxy[TH27] Got upload request for: upload.txt
+    [junit] FileServer[TH33] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH33] Got upload request for file: upload.txt
+    [junit] FileServer[TH33] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH33] Running out ...
+    [junit] 10:55:40.215		client: Upload successful!
+    [junit] 10:55:40.711		client> !credits
+    [junit] Proxy[TH27] Got credits request.
+    [junit] 10:55:40.711		client: !credits 292
+    [junit] 10:55:41.212		client> !logout
+    [junit] Proxy[TH27] Got logout request.
+    [junit] Proxy[TH27] Closing connection to 127.0.0.1 ...
+    [junit] Proxy[TH27] Running out ...
+    [junit] 10:55:41.213		client: Successfully logged out.
+    [junit] 10:55:41.712		proxy> !exit
+    [junit] FileListener going down ... !
+    [junit] ProxyTcpListener:TcpListener going down ... !
+    [junit] 10:55:41.713		proxy: 
+    [junit] 10:55:42.213		fs1> !exit
+    [junit] FileServer.ReportOnlineStatus exit() called!
+    [junit] Fileserver going down ... !
+    [junit] FileServerTcpListener:TcpListener going down ... !
+    [junit] 10:55:42.214		fs1: 
+    [junit] 10:55:42.713		client> !exit
+    [junit] Goodbye.
+    [junit] 10:55:42.713		client: 
+    [junit] ################################################################################
+    [junit] 02_usecase_buy_credits_test.txt
+    [junit] 10:55:51.222		proxy> !users
+    [junit] 10:55:51.223		proxy:
+    [junit] 10:55:51.223		1. bill            offline           200
+    [junit] 10:55:51.223		2. alice           offline           200
+    [junit] 10:55:51.722		client> !login alice 12345
+    [junit] Proxy[TH45] Spawned, serving: 127.0.0.1 ...
+    [junit] Proxy[TH45] Got login request for: alice
+    [junit] 10:55:51.724		client: !login success
+    [junit] 10:55:52.223		client> !credits
+    [junit] Proxy[TH45] Got credits request.
+    [junit] 10:55:52.224		client: !credits 200
+    [junit] 10:55:52.723		client> !list
+    [junit] Proxy[TH45] Got list request.
+    [junit] FileServer[TH47] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH47] Got list request.
+    [junit] FileServer[TH47] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH47] Running out ...
+    [junit] FileServer[TH49] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH49] Got list request.
+    [junit] FileServer[TH49] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH49] Running out ...
+    [junit] 10:55:52.732		client:
+    [junit] 10:55:52.732		multiline.txt
+    [junit] 10:55:52.732		short.txt
+    [junit] 10:55:52.732		long.txt
+    [junit] 10:55:52.732		upload.txt
+    [junit] 10:55:53.224		client> !download short.txt
+    [junit] Proxy[TH45] Got download request for: short.txt
+    [junit] FileServer[TH51] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH51] Got info request for: short.txt
+    [junit] FileServer[TH51] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH51] Running out ...
+    [junit] FileServer[TH52] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH52] Got version request for: short.txt
+    [junit] FileServer[TH52] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH52] Running out ...
+    [junit] FileServer[TH53] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH53] Got download request for file: files/fileserver1/short.txt
+    [junit] FileServer[TH53] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH53] Running out ...
+    [junit] 10:55:53.231		client: !data dslab13
+    [junit] 10:55:53.724		proxy> !users
+    [junit] 10:55:53.724		proxy:
+    [junit] 10:55:53.724		1. bill            offline           200
+    [junit] 10:55:53.724		2. alice           online            192
+    [junit] 10:55:54.224		client> !credits
+    [junit] Proxy[TH45] Got credits request.
+    [junit] 10:55:54.224		client: !credits 192
+    [junit] 10:55:54.724		client> !download long.txt
+    [junit] Proxy[TH45] Got download request for: long.txt
+    [junit] FileServer[TH54] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH54] Got info request for: long.txt
+    [junit] FileServer[TH54] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH54] Running out ...
+    [junit] 10:55:54.726		client: Not enough credits!
+    [junit] 10:55:55.225		client> !buy 1000
+    [junit] Proxy[TH45] Got buy request.
+    [junit] 10:55:55.230		client: !credits 1192
+    [junit] 10:55:55.726		client> !download long.txt
+    [junit] Proxy[TH45] Got download request for: long.txt
+    [junit] FileServer[TH55] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH55] Got info request for: long.txt
+    [junit] FileServer[TH55] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH55] Running out ...
+    [junit] FileServer[TH56] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH56] Got version request for: long.txt
+    [junit] FileServer[TH56] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH56] Running out ...
+    [junit] FileServer[TH57] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH57] Got download request for file: files/fileserver2/long.txt
+    [junit] FileServer[TH57] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH57] Running out ...
+    [junit] 10:55:55.732		client:
+    [junit] 10:55:55.732		!data ###################################################################################################
+    [junit] 10:55:55.732		###################################################################################################
+    [junit] 10:55:55.732		###################################################################################################
+    [junit] 10:55:55.732		###################################################################################################
+    [junit] 10:55:55.732		###################################################################################################
+    [junit] 10:55:55.732		###################################################################################################
+    [junit] 10:55:55.732		###################################################################################################
+    [junit] 10:55:55.732		###################################################################################################
+    [junit] 10:55:55.732		###################################################################################################
+    [junit] 10:55:55.732		###################################################################################################
+    [junit] 10:55:56.226		proxy> !users
+    [junit] 10:55:56.227		proxy:
+    [junit] 10:55:56.227		1. bill            offline           200
+    [junit] 10:55:56.227		2. alice           online            192
+    [junit] 10:55:56.727		client> !credits
+    [junit] Proxy[TH45] Got credits request.
+    [junit] 10:55:56.728		client: !credits 192
+    [junit] 10:55:57.228		client> !ls
+    [junit] 10:55:57.229		client:
+    [junit] 10:55:57.229		java.lang.IllegalArgumentException: Command '!ls' not registered.
+    [junit] 10:55:57.229			at cli.Shell.invoke(Shell.java:234)
+    [junit] 10:55:57.229			at cli.Shell.run(Shell.java:79)
+    [junit] 10:55:57.229			at java.lang.Thread.run(Thread.java:724)
+    [junit] 10:55:57.728		client> !upload upload.txt
+    [junit] Proxy[TH45] Got upload request for: upload.txt
+    [junit] FileServer[TH58] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH58] Got upload request for file: upload.txt
+    [junit] FileServer[TH58] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH58] Running out ...
+    [junit] FileServer[TH59] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH59] Got upload request for file: upload.txt
+    [junit] FileServer[TH59] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH59] Running out ...
+    [junit] 10:55:57.732		client: Upload successful!
+    [junit] 10:55:58.228		proxy> !users
+    [junit] 10:55:58.228		proxy:
+    [junit] 10:55:58.228		1. bill            offline           200
+    [junit] 10:55:58.228		2. alice           online            292
+    [junit] 10:55:58.728		client> !credits
+    [junit] Proxy[TH45] Got credits request.
+    [junit] 10:55:58.729		client: !credits 292
+    [junit] 10:55:59.229		proxy> !fileservers
+    [junit] 10:55:59.231		proxy:
+    [junit] 10:55:59.231		1. 127.0.0.1       13352 online              8
+    [junit] 10:55:59.231		2. 127.0.0.1       13353 online           1000
+    [junit] 10:55:59.730		client> !logout
+    [junit] Proxy[TH45] Got logout request.
+    [junit] Proxy[TH45] Closing connection to 127.0.0.1 ...
+    [junit] Proxy[TH45] Running out ...
+    [junit] 10:55:59.731		client: Successfully logged out.
+    [junit] 10:56:00.230		client> !exit
+    [junit] Goodbye.
+    [junit] 10:56:00.231		client: 
+    [junit] 10:56:00.731		fs1> !exit
+    [junit] FileServer.ReportOnlineStatus exit() called!
+    [junit] Fileserver going down ... !
+    [junit] FileServerTcpListener:TcpListener going down ... !
+    [junit] 10:56:00.732		fs1: 
+    [junit] 10:56:01.231		fs2> !exit
+    [junit] FileServer.ReportOnlineStatus exit() called!
+    [junit] Fileserver going down ... !
+    [junit] FileServerTcpListener:TcpListener going down ... !
+    [junit] 10:56:01.232		fs2: 
+    [junit] 10:56:01.732		proxy> !exit
+    [junit] FileListener going down ... !
+    [junit] ProxyTcpListener:TcpListener going down ... !
+    [junit] 10:56:01.733		proxy: 
+    [junit] ################################################################################
+    [junit] 03_filenotfound_test.txt
+    [junit] 10:56:08.239		client> !login alice 12345
+    [junit] Proxy[TH68] Spawned, serving: 127.0.0.1 ...
+    [junit] Proxy[TH68] Got login request for: alice
+    [junit] 10:56:08.242		client: !login success
+    [junit] 10:56:08.739		client> !download notexistingfile.txt
+    [junit] Proxy[TH68] Got download request for: notexistingfile.txt
+    [junit] FileServer[TH70] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH70] Got info request for: notexistingfile.txt
+    [junit] FileServer[TH70] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH70] Running out ...
+    [junit] 10:56:08.742		client: File not found!
+    [junit] 10:56:09.240		proxy> !exit
+    [junit] FileListener going down ... !
+    [junit] ProxyTcpListener:TcpListener going down ... !
+    [junit] Proxy[TH68] Lost connection to client 127.0.0.1 ...
+    [junit] Proxy[TH68] Running out ...
+    [junit] 10:56:09.241		proxy: 
+    [junit] 10:56:09.740		client> !exit
+    [junit] Goodbye.
+    [junit] 10:56:09.740		client: 
+    [junit] 10:56:10.241		fs1> !exit
+    [junit] FileServer.ReportOnlineStatus exit() called!
+    [junit] Fileserver going down ... !
+    [junit] FileServerTcpListener:TcpListener going down ... !
+    [junit] 10:56:10.242		fs1: 
+    [junit] ################################################################################
+    [junit] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 47,616 sec
+    [junit] Running test.SimpleTest
+    [junit] Proxy[TH80] Spawned, serving: 127.0.0.1 ...
+    [junit] Proxy[TH80] Got login request for: alice
+    [junit] Proxy[TH80] Got credits request.
+    [junit] Proxy[TH80] Got download request for: short.txt
+    [junit] FileServer[TH82] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH82] Got info request for: short.txt
+    [junit] FileServer[TH82] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH82] Running out ...
+    [junit] FileServer[TH84] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH84] Got version request for: short.txt
+    [junit] FileServer[TH84] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH84] Running out ...
+    [junit] FileServer[TH85] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH85] Got download request for file: files/fileserver1/short.txt
+    [junit] FileServer[TH85] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH85] Running out ...
+    [junit] Proxy[TH80] Got credits request.
+    [junit] Proxy[TH80] Got upload request for: upload.txt
+    [junit] FileServer[TH86] Spawned, serving: 127.0.0.1 ...
+    [junit] FileServer[TH86] Got upload request for file: upload.txt
+    [junit] FileServer[TH86] Closing connection to 127.0.0.1 ...
+    [junit] FileServer[TH86] Running out ...
+    [junit] Proxy[TH80] Got credits request.
+    [junit] Proxy[TH80] Got logout request.
+    [junit] Proxy[TH80] Closing connection to 127.0.0.1 ...
+    [junit] Proxy[TH80] Running out ...
+    [junit] FileListener going down ... !
+    [junit] FileServer.ReportOnlineStatus exit() called!
+    [junit] ProxyTcpListener:TcpListener going down ... !
+    [junit] FileServerTcpListener:TcpListener going down ... !
+    [junit] Fileserver going down ... !
+    [junit] Goodbye.
+    [junit] Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 6,023 sec
+
+BUILD SUCCESSFUL
+Total time: 54 seconds
