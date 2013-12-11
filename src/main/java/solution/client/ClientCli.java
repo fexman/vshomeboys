@@ -30,8 +30,6 @@ import client.IClientCli;
 
 public class ClientCli implements IClientCli {
 
-	private final Config conf;
-	private final Shell shell;
 	private Thread shellThread;
 	private String path;
 	private Socket socket;
@@ -51,8 +49,6 @@ public class ClientCli implements IClientCli {
 	}
 	
 	public ClientCli(Config conf, Shell shell) throws IOException {
-		this.conf = conf;
-		this.shell = shell;
 		
 		try {
 		path = conf.getString("download.dir");

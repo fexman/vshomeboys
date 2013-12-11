@@ -23,7 +23,6 @@ public class ProxyCli implements IProxyCli  {
 	
 	private ConcurrentHashMap<String,MyUserInfo> users;
 	private ConcurrentHashMap<MyFileServerInfo,Long> fileservers;
-	private final Config conf;
 	private final Shell shell;
 	private Thread shellThread;
 	private ProxyTcpListener pcl;
@@ -34,7 +33,6 @@ public class ProxyCli implements IProxyCli  {
 	}
 	
 	public ProxyCli(Config conf, Shell shell) {
-		this.conf = conf;
 		this.shell = shell;
 		
 		users = new ConcurrentHashMap<String,MyUserInfo>(UserConfigParser.getUserMap());

@@ -18,9 +18,7 @@ import cli.Shell;
 import convert.ConversionService;
 
 public abstract class FileServerCli implements IFileServerCli {
-	
-	private final Config conf;
-	private final Shell shell;
+
 	private Thread shellThread;
 	private final Timer t;
 	private ReportOnlineStatus ros;
@@ -28,9 +26,6 @@ public abstract class FileServerCli implements IFileServerCli {
 
 	
 	public FileServerCli(Config conf, Shell shell) {
-		
-		this.conf = conf;
-		this.shell = shell;
 		
 		t = new Timer();
 		
