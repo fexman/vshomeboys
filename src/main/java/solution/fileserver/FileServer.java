@@ -3,8 +3,8 @@ package solution.fileserver;
 import java.io.File;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import message.Response;
 import message.request.DownloadFileRequest;
@@ -22,48 +22,36 @@ import solution.AbstractTcpServer;
 import solution.util.FileUtils;
 import util.ChecksumUtils;
 
-public class FileServer extends AbstractTcpServer implements IFileServer  {
-	
+public class FileServer extends AbstractTcpServer implements IFileServer {
+
 	private final String path;
-	
-	public FileServer(Socket socket, Set<AbstractTcpServer> connections, String path)
-			throws IOException {
+	ConcurrentHashMap<String, Integer> files;
+
+	public FileServer(Socket socket, Set<AbstractTcpServer> connections, String path, ConcurrentHashMap<String, Integer> files) throws IOException {
 		super(socket, connections);
 		this.path = path;
+		this.files = files;
 		stopListening();
 	}
 
 	@Override
 	public Response list() throws IOException {
-		
+
 		println("Got list request.");
-		
-		File f = new File(path);
-		File[] files = f.listFiles();
-		
-		HashSet<String> fileNames = new HashSet<String>();
-		
-		if (files != null) {
-			for (int i = 0; i < files.length; i++) {
-				if (files[i].isFile()) {
-					fileNames.add(files[i].getName());
-				}
-			}
-		}
-		
-		return new ListResponse(fileNames);
+
+		return new ListResponse(files.keySet());
 	}
 
 	@Override
 	public Response download(DownloadFileRequest request) throws IOException {
-		
+
 		DownloadTicket t = request.getTicket();
 		String filepath = path + "/" + t.getFilename();
-		
-		println("Got download request for file: " + filepath); 
-		
+
+		println("Got download request for file: " + filepath);
+
 		try {
-			
+
 			if (!ChecksumUtils.verifyChecksum(t.getUsername(), FileUtils.getFile(filepath), 0, t.getChecksum())) {
 				return new MessageResponse("Invalid Ticket: Invalid checksum.");
 			}
@@ -74,32 +62,33 @@ public class FileServer extends AbstractTcpServer implements IFileServer  {
 			return new MessageResponse("Invalid Ticket: File not found.");
 		}
 
-
 	}
 
 	@Override
 	public Response info(InfoRequest request) throws IOException {
-		
+
 		println("Got info request for: " + request.getFilename());
 		File f = new File(path + "/" + request.getFilename());
 
 		if (f.exists()) {
-			return new InfoResponse(request.getFilename(),f.length());
+			return new InfoResponse(request.getFilename(), f.length());
 		}
-		return new InfoResponse(request.getFilename(),-1);
+		return new InfoResponse(request.getFilename(), -1);
 	}
 
 	@Override
 	public Response version(VersionRequest request) throws IOException {
-		println("Got version request for: " + request.getFilename());
-		return new VersionResponse(request.getFilename(),0);
+		println("Got version request for: " + request.getFilename() + "\n" +
+				"Version: " + files.get(request.getFilename()));
+		return new VersionResponse(request.getFilename(), files.get(request.getFilename()));
 	}
 
 	@Override
-	public MessageResponse upload(UploadRequest request) throws IOException  {
-	println("Got upload request for file: " + request.getFilename());
+	public MessageResponse upload(UploadRequest request) throws IOException {
+		println("Got upload request for file: " + request.getFilename());
 		try {
-		FileUtils.writeBytesToFile(path+ "/" + request.getFilename(),request.getContent());
+			FileUtils.writeBytesToFile(path + "/" + request.getFilename(), request.getContent());
+			versionFile(request.getFilename());
 		} catch (IOException e) {
 			return new MessageResponse("Error: Fileserver could not write file.");
 		}
@@ -108,10 +97,23 @@ public class FileServer extends AbstractTcpServer implements IFileServer  {
 
 	@Override
 	public void customShutDown() {
-		//Nothing to do here!
-		
-	}
-	
-	
+		// Nothing to do here!
 
+	}
+
+	/**
+	 * Increases version number of existing file by 1 or initializes new file with version number 0.
+	 * @param filename
+	 */
+	private void versionFile(String filename) {
+		
+		if (files.containsKey(filename)) {
+			
+			files.put(filename, files.get(filename) + 1);
+			
+		} else {
+			
+			files.put(filename, 0);
+		}
+	}
 }
