@@ -27,7 +27,8 @@ public class FileServer extends AbstractTcpServer implements IFileServer {
 	private final String path;
 	ConcurrentHashMap<String, Integer> files;
 
-	public FileServer(Socket socket, Set<AbstractTcpServer> connections, String path, ConcurrentHashMap<String, Integer> files) throws IOException {
+	public FileServer(Socket socket, Set<AbstractTcpServer> connections, String path,
+			ConcurrentHashMap<String, Integer> files) throws IOException {
 		super(socket, connections);
 		this.path = path;
 		this.files = files;
@@ -78,17 +79,22 @@ public class FileServer extends AbstractTcpServer implements IFileServer {
 
 	@Override
 	public Response version(VersionRequest request) throws IOException {
-		println("Got version request for: " + request.getFilename() + "\n" +
-				"Version: " + files.get(request.getFilename()));
-		return new VersionResponse(request.getFilename(), files.get(request.getFilename()));
+		String filename = request.getFilename();
+		println("Got version request for: " + filename);
+
+		if (files.containsKey(filename)) {
+			return new VersionResponse(request.getFilename(), files.get(request.getFilename()));
+		} else {
+			return new VersionResponse(request.getFilename(), -1);
+		}
 	}
 
 	@Override
 	public MessageResponse upload(UploadRequest request) throws IOException {
-		println("Got upload request for file: " + request.getFilename());
+		println("Got upload request for file: " + request.getFilename() + "with version " + request.getVersion());
 		try {
 			FileUtils.writeBytesToFile(path + "/" + request.getFilename(), request.getContent());
-			versionFile(request.getFilename());
+			versionFile(request.getFilename(), request.getVersion());
 		} catch (IOException e) {
 			return new MessageResponse("Error: Fileserver could not write file.");
 		}
@@ -102,18 +108,13 @@ public class FileServer extends AbstractTcpServer implements IFileServer {
 	}
 
 	/**
-	 * Increases version number of existing file by 1 or initializes new file with version number 0.
+	 * Sets the version number of filename to version
+	 * 
 	 * @param filename
+	 * @param version
 	 */
-	private void versionFile(String filename) {
-		
-		if (files.containsKey(filename)) {
-			
-			files.put(filename, files.get(filename) + 1);
-			
-		} else {
-			
-			files.put(filename, 0);
-		}
+	private void versionFile(String filename, int version) {
+
+		files.put(filename, version);
 	}
 }

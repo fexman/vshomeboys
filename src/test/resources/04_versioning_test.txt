@@ -16,3 +16,4 @@ client: !download short.txt
 proxy:	!exit
 client:	!exit
 fs1:	!exit
+fs2:	!exit

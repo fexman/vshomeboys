@@ -4,7 +4,9 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -32,36 +34,39 @@ import solution.model.MyFileServerInfo;
 import solution.model.MyUserInfo;
 import util.ChecksumUtils;
 
-public class Proxy extends AbstractTcpServer implements IProxy  {
-	
-	private ConcurrentHashMap<String,MyUserInfo> users;
-	private ConcurrentHashMap<MyFileServerInfo,Long> fileservers;
-	
-	private MyUserInfo user;
-	private static final MessageResponse RESPONSE_NOT_LOGGED_IN = new MessageResponse("Error: No user logged in. Login first!"); 
+public class Proxy extends AbstractTcpServer implements IProxy {
 
-	public Proxy(Socket socket, Set<AbstractTcpServer> connections)
-			throws IOException {
+	private ConcurrentHashMap<String, MyUserInfo> users;
+	private ConcurrentHashMap<MyFileServerInfo, Long> fileservers;
+
+	private MyUserInfo user;
+	private static final MessageResponse RESPONSE_NOT_LOGGED_IN = new MessageResponse(
+			"Error: No user logged in. Login first!");
+
+	// TODO what is this?
+	public Proxy(Socket socket, Set<AbstractTcpServer> connections) throws IOException {
 		super(socket, connections);
 		throw new IOException("Sorry, can't construct Proxy that way! :(");
 	}
-	
-	public Proxy (final Socket socket, final ConcurrentHashMap<String,MyUserInfo> users, final ConcurrentHashMap<MyFileServerInfo,Long> fileservers,final Set<AbstractTcpServer> connections) throws IOException {
-		super(socket,connections);
-		
+
+	public Proxy(final Socket socket, final ConcurrentHashMap<String, MyUserInfo> users,
+			final ConcurrentHashMap<MyFileServerInfo, Long> fileservers, final Set<AbstractTcpServer> connections)
+			throws IOException {
+		super(socket, connections);
+
 		this.users = users;
 		this.fileservers = fileservers;
-		
 	}
-	
+
 	@Override
 	public LoginResponse login(LoginRequest request) throws IOException {
 		println("Got login request for: " + request.getUsername());
 		MyUserInfo u = users.get(request.getUsername());
-		if (u == null) { //User non existent
+		if (u == null) { // User non existent
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
 		}
-		if(!u.login(request.getPassword())) { //Wrong password, or already logged in
+		if (!u.login(request.getPassword())) { // Wrong password, or already
+												// logged in
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
 		}
 		this.user = u;
@@ -89,29 +94,25 @@ public class Proxy extends AbstractTcpServer implements IProxy  {
 
 	@Override
 	public Response list() throws IOException {
+
 		println("Got list request.");
 		if (user == null) {
 			return RESPONSE_NOT_LOGGED_IN;
 		}
-		MyFileServerInfo[] fileServerArr = fileservers.keySet().toArray(new MyFileServerInfo[0]);
-		HashSet<String> fileNames = new HashSet<String>();
-		
-		for (int i = fileServerArr.length -1;i >= 0; i--) {
-			MyFileServerInfo currentFS = fileServerArr[fileServerArr.length - 1 - i];
-			if (currentFS.isOnline()) {
-					try {
-						ListResponse resp = (ListResponse) contactFileServer(currentFS, new ListRequest());
-						if (resp != null) {
-							for (String s : resp.getFileNames()) {
-								fileNames.add(s);
-							}
-						}
-					} catch (ClassCastException e) { 
-						//oops
-					}
+
+		List<MyFileServerInfo> servers = getAllOnlineFileServersByUsage();
+		Set<String> fileNames = new HashSet<String>();
+
+		for (MyFileServerInfo i : servers) {
+
+			ListResponse resp = receiveListResponseFromServer(i, new ListRequest());
+			if (resp != null) {
+				for (String s : resp.getFileNames()) {
+					fileNames.add(s);
+				}
 			}
 		}
-		
+
 		return new ListResponse(fileNames);
 	}
 
@@ -121,37 +122,58 @@ public class Proxy extends AbstractTcpServer implements IProxy  {
 		if (user == null) {
 			return RESPONSE_NOT_LOGGED_IN;
 		}
-		MyFileServerInfo[] fileServerArr = getFileServersByUsage();
-		
-		for (int i = fileServerArr.length -1;i >= 0; i--) {
-			MyFileServerInfo currentFS = fileServerArr[fileServerArr.length - 1 - i];
-			if (currentFS.isOnline()) {
-				try {
-					InfoResponse resp = (InfoResponse) contactFileServer(currentFS, new InfoRequest(request.getFilename()));
-					if (resp != null)  {
-						if (resp.getSize() > 0) {
-							
-		
-							long size = resp.getSize();
-							if (user.getCredits() < resp.getSize()) {
-								return new MessageResponse("Not enough credits!");
-							}
-							
-							VersionResponse resp1 = (VersionResponse) contactFileServer(currentFS, new VersionRequest(request.getFilename()));
-							
-							int version = resp1.getVersion();
-							String checksum = ChecksumUtils.generateChecksum(user.getName(), request.getFilename(), version, size);
-							
-							DownloadTicket ticket = new DownloadTicket(user.getName(), request.getFilename(), checksum, currentFS.getAddress(),currentFS.getPort());
-							user.modifyCredits(-size);
-							currentFS.use(size);
-							
-							return new DownloadTicketResponse(ticket);
-							
-						}
+
+		List<MyFileServerInfo> servers = getOnlineFileServersByUsage(computeReadQ());
+		println("servers online: " + getAllOnlineFileServersByUsage().size());
+		println("read quorum = " + computeReadQ());
+		println("write quorum = " + computeWriteQ());
+		/*
+		 * first, determine the highest version number
+		 */
+		List<MyFileServerInfo> chosen = new ArrayList<MyFileServerInfo>();
+		int latestVersion = -1;
+
+		for (MyFileServerInfo i : servers) {
+
+			VersionResponse resp = receiveVersionResponseFromServer(i, new VersionRequest(request.getFilename()));
+			if (resp != null && resp.getVersion() > latestVersion) {
+				println("added server: " + i + ", new version: " + latestVersion);
+				latestVersion = resp.getVersion();
+				chosen.add(i);
+			}
+		}
+
+		/*
+		 * Because servers is sorted by usage, chosen also has to be sorted
+		 * already. Therefore the last element of chosen is the one with the
+		 * lowest usage of all servers, that store the file in its highest
+		 * version.
+		 */
+
+		if (!chosen.isEmpty()) { // so the file exists
+
+			MyFileServerInfo server = chosen.get(chosen.size() - 1);
+			println("Chosen server : " + server + ", latest fileversion: " + latestVersion);
+
+			InfoResponse resp = receiveInfoResponseFromServer(server, new InfoRequest(request.getFilename()));
+
+			if (resp != null) {
+				if (resp.getSize() > 0) {
+
+					long size = resp.getSize();
+					if (user.getCredits() < resp.getSize()) {
+						return new MessageResponse("Not enough credits!");
 					}
-				} catch (ClassCastException e) { 
-					//oops
+
+					String checksum = ChecksumUtils.generateChecksum(user.getName(), request.getFilename(),
+							latestVersion, size);
+
+					DownloadTicket ticket = new DownloadTicket(user.getName(), request.getFilename(), checksum,
+							server.getAddress(), server.getPort());
+					user.modifyCredits(-size);
+					server.use(size);
+
+					return new DownloadTicketResponse(ticket);
 				}
 			}
 		}
@@ -159,34 +181,57 @@ public class Proxy extends AbstractTcpServer implements IProxy  {
 	}
 
 	@Override
+	// TODO usage of servers is not increased after upload (commented)
 	public MessageResponse upload(UploadRequest request) throws IOException {
 
-		println("Got upload request for: " + request.getFilename());
+		String filename = request.getFilename();
+		println("Got upload request for: " + filename);
+		println("write quorum: " + computeWriteQ());
 
 		if (user == null) {
 			return RESPONSE_NOT_LOGGED_IN;
 		}
-		
-		boolean uploadHappened = false;
+
+		boolean uploadFailed = false;
 		long size = request.getContent().length;
-		for (MyFileServerInfo currentFS : fileservers.keySet()) {
-			if (currentFS.isOnline()) {
-				try {
-					MessageResponse resp = (MessageResponse) contactFileServer(currentFS, request);
-					if (resp != null) {
-						if (!resp.getMessage().equals("Error: Fileserver could not write file.")) {
-							//currentFS.use(size);
-							uploadHappened = true;
-						}
-					}
-				} catch (ClassCastException e) { 
-					//should not happen
+
+		List<MyFileServerInfo> servers = getOnlineFileServersByUsage(computeReadQ());
+		int version = -1;
+
+		/*
+		 * first, determine the appropriate version number, according to
+		 * Gifford's scheme
+		 */
+		for (MyFileServerInfo i : servers) {
+
+			VersionResponse resp = receiveVersionResponseFromServer(i, new VersionRequest(filename));
+
+			if (resp != null) {
+
+				version = Math.max(resp.getVersion(), version);
+			}
+		}
+		println("latest version so far: " + version);
+
+		/*
+		 * next, the file is uploaded to the write quorum
+		 */
+		servers = getOnlineFileServersByUsage(computeWriteQ());
+		println("number of servers, that receive the file = " + servers.size() + " (should be write-quorum)");
+		for (MyFileServerInfo i : servers) {
+
+			MessageResponse resp = receiveMessageResponseFromServer(i, new UploadRequest(request.getFilename(),
+					version + 1, request.getContent()));
+			if (resp != null) {
+				if (resp.getMessage().equals("Error: Fileserver could not write file.")) {
+					// currentFS.use(size);
+					uploadFailed = true;
 				}
 			}
 		}
 
-		if (uploadHappened) {
-			user.modifyCredits(2*size);
+		if (!uploadFailed) {
+			user.modifyCredits(2 * size);
 			return new MessageResponse("Upload successful!");
 		} else {
 			return new MessageResponse("Could not upload file!");
@@ -203,46 +248,154 @@ public class Proxy extends AbstractTcpServer implements IProxy  {
 		stopListening();
 		return new MessageResponse("Successfully logged out.");
 	}
-	
+
 	protected void customShutDown() {
 		if (user != null) {
 			user.logout();
 		}
 	}
-	
-	private MyFileServerInfo[] getFileServersByUsage() {
-		MyFileServerInfo[] fileServerArr = fileservers.keySet().toArray(new MyFileServerInfo[0]);
-		java.util.Arrays.sort(fileServerArr);
-		return fileServerArr;
-	}
-	
+
 	/**
 	 * Send request to given fileserver and return it's response
-	 * @param mfs 
+	 * 
+	 * @param mfs
 	 * @param request
-	 * @return null in case of transmit errors (connection-errors, received data is no response-object)
+	 * @return null in case of transmit errors (connection-errors, received data
+	 *         is no response-object)
+	 * @throws IOException
 	 */
-	private Response contactFileServer(MyFileServerInfo mfs, Request request) {
+	private Response receiveResponseFromServer(MyFileServerInfo mfs, Request request) throws IOException {
 		Socket fSocket = null;
 		ObjectOutputStream fOut = null;
 		ObjectInputStream fIn = null;
 		try {
-			fSocket = new Socket(mfs.getAddress(),mfs.getPort());
+			fSocket = new Socket(mfs.getAddress(), mfs.getPort());
 			fOut = new ObjectOutputStream(fSocket.getOutputStream());
 			fIn = new ObjectInputStream(fSocket.getInputStream());
 			fOut.writeObject(request);
-			Response resp = (Response)fIn.readObject();
+			Response resp = (Response) fIn.readObject();
 			fSocket.close();
 			return resp;
-		} catch (IOException e) {
-			return null;
-		} catch (ClassCastException e) { 
+		} catch (ClassCastException e) {
+			fSocket.close();
+			println("classcast");
 			return null;
 		} catch (ClassNotFoundException e) {
+			println("classnotfoudnd");
+			fSocket.close();
 			return null;
-			//should not happen
-		} 
-
+		}
 	}
 
+	private MessageResponse receiveMessageResponseFromServer(MyFileServerInfo mfs, Request request) throws IOException {
+
+		Response r = receiveResponseFromServer(mfs, request);
+
+		if (r != null && r instanceof MessageResponse) {
+			return (MessageResponse) r;
+		} else {
+			return null;
+		}
+	}
+
+	private VersionResponse receiveVersionResponseFromServer(MyFileServerInfo mfs, Request request) throws IOException {
+
+		Response r = receiveResponseFromServer(mfs, request);
+
+		if (r != null && r instanceof VersionResponse) {
+			return (VersionResponse) r;
+		} else {
+			println("return null");
+			return null;
+		}
+	}
+
+	private InfoResponse receiveInfoResponseFromServer(MyFileServerInfo mfs, Request request) throws IOException {
+
+		Response r = receiveResponseFromServer(mfs, request);
+
+		if (r != null && r instanceof InfoResponse) {
+			return (InfoResponse) r;
+		} else {
+			return null;
+		}
+	}
+
+	private ListResponse receiveListResponseFromServer(MyFileServerInfo mfs, Request request) throws IOException {
+
+		Response r = receiveResponseFromServer(mfs, request);
+
+		if (r != null && r instanceof ListResponse) {
+			return (ListResponse) r;
+		} else {
+			return null;
+		}
+	}
+
+	/**
+	 * Returns a map with all fileservers that are online.
+	 */
+	private ConcurrentHashMap<MyFileServerInfo, Long> onlineFileServers() {
+
+		ConcurrentHashMap<MyFileServerInfo, Long> servers = new ConcurrentHashMap<MyFileServerInfo, Long>();
+
+		for (MyFileServerInfo i : fileservers.keySet()) {
+
+			if (i.isOnline()) {
+
+				servers.put(i, fileservers.get(i));
+			}
+		}
+
+		return servers;
+	}
+
+	/**
+	 * Returns a List of all available (online) fileservers, sorted ascendingly
+	 * by their usage.
+	 */
+	private List<MyFileServerInfo> getAllOnlineFileServersByUsage() {
+		ArrayList<MyFileServerInfo> servers = new ArrayList<MyFileServerInfo>(onlineFileServers().keySet());
+		java.util.Collections.sort(servers);
+		return servers;
+	}
+
+	/**
+	 * Returns a List of the first n available (online) fileservers, sorted
+	 * ascendingly by their usage.
+	 */
+	private List<MyFileServerInfo> getOnlineFileServersByUsage(int n) {
+		List<MyFileServerInfo> servers = getAllOnlineFileServersByUsage();
+		return servers.subList(0, n);
+	}
+
+	/**
+	 * Computes the read quorum, needed for Gifford's scheme
+	 * 
+	 * @return int > 0, that computeWriteQ() + computeReadQ() > serversOnline(),
+	 *         but never more than the number of online servers.
+	 */
+	private int computeReadQ() {
+		return Math.min(serversOnline() - computeWriteQ() + 1,serversOnline());
+	}
+
+	/**
+	 * Computes the write quorum, needed for Gifford's scheme
+	 * 
+	 * @return int > 0, that computeWriteQ() > serversOnline() / 2, but never
+	 *         more than the number of online servers.
+	 */
+	private int computeWriteQ() {
+		return Math.min(((int) serversOnline() / 2) + 1, serversOnline());
+	}
+
+	/**
+	 * Returns the number of servers online
+	 * 
+	 * @return int > 0, number of servers, where isOnline == true
+	 */
+	private int serversOnline() {
+
+		return onlineFileServers().size();
+	}
 }
