@@ -22,6 +22,8 @@ import message.response.DownloadTicketResponse;
 import message.response.LoginResponse;
 import message.response.MessageResponse;
 import model.DownloadTicket;
+import solution.communication.Channel;
+import solution.communication.TCPChannel;
 import solution.util.FileUtils;
 import util.Config;
 import cli.Command;
@@ -32,13 +34,10 @@ public class ClientCli implements IClientCli {
 
 	private Thread shellThread;
 	private String path;
-	private Socket socket;
-	private ObjectOutputStream out;
-	private ObjectInputStream in;
-	private boolean connected;
-	private boolean loggedIn;
+	private Channel proxyChannel;
 	private String proxyHost;
 	private int proxyPort;
+	private boolean loggedIn;
 	
 	public static void main (String[] args) {
 		try {
@@ -56,7 +55,6 @@ public class ClientCli implements IClientCli {
 		proxyPort = conf.getInt("proxy.tcp.port");
 		proxyHost = conf.getString("proxy.host");
 		
-		connected = false;
 		loggedIn = false;
 		
 		shell.register(this);
@@ -149,10 +147,7 @@ public class ClientCli implements IClientCli {
 	@Override
 	public MessageResponse logout() throws IOException {
 		MessageResponse r = (MessageResponse)contactProxy(new LogoutRequest());
-		if (loggedIn) { //assumption: logout-behaviour differs when not logged in (stays connected)
-			connected = false;
-			loggedIn = false;
-		}
+		proxyChannel.close();
 		return r;
 	}
 
@@ -164,14 +159,9 @@ public class ClientCli implements IClientCli {
 			logout();
 		}
 		
-		if (socket != null) //Have we been connected already?
+		if (proxyChannel != null) //Have we been connected already?
 		{		
-			
-			try {
-				socket.close();
-			} catch (IOException e) {
-				//Nothing
-			}
+			proxyChannel.close();
 		}
 		
 		//this.shell.close();
@@ -181,32 +171,34 @@ public class ClientCli implements IClientCli {
 		return new MessageResponse("");
 	}
 	
-	private Response contactProxy(Request request) throws IOException {
-		try {
-			if (!connected) { //If not connected open socket first
-				try {
-				socket = new Socket(proxyHost,proxyPort);
-				out = new ObjectOutputStream(socket.getOutputStream());
-				in = new ObjectInputStream(socket.getInputStream());
-				connected = true;
-				} catch (IOException ex) { }
+	private Response contactProxy(Request request){
+			
+		if (proxyChannel == null) { //First time
+			try {
+				proxyChannel = new TCPChannel(InetAddress.getByName(proxyHost),proxyPort);
 			}
-			
-			if (connected) {
-				out.writeObject(request);
-				return (Response)in.readObject();
+			catch (IOException e) {
+				return new MessageResponse("Couldn\'t connect to proxy. Is proxy online?") ;
 			}
-			
-			//Connection attempt went wrong
-			return new MessageResponse("Couldn\'t connect to proxy. Is proxy online?") ;
-			
-		} catch (ClassNotFoundException e) { //??
-			e.printStackTrace();
-			return new MessageResponse("Well, that should NOT happen! ClassNotFoundException!") ;
-		} catch (IOException e) { //Abruptly lost connection
-			connected = false;
-			return new MessageResponse("Lost connection to proxy. Maybe proxy went offline?") ;
 		}
+
+
+		if (!proxyChannel.connected()) { //Lost connection
+			try { //Try to establish new one
+				proxyChannel = new TCPChannel(InetAddress.getByName(proxyHost),proxyPort);
+			}
+			catch (IOException e) {
+				return new MessageResponse("Couldn\'t connect to proxy. Is proxy online?") ;
+			}
+		}
+		
+		//Connection attempt went wrong
+		try {
+			return (Response)proxyChannel.contact(request);
+		} catch (IOException e) {
+			return new MessageResponse("Connection to Proxy lost.");
+		}
+
 	}
 	
 	private Response contactFileServer(InetAddress address, int port, Request request) {
@@ -231,6 +223,4 @@ public class ClientCli implements IClientCli {
 		} 
 
 	}
-
-	
 }

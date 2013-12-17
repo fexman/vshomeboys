@@ -1,9 +1,6 @@
 package solution.proxy;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -30,6 +27,8 @@ import message.response.VersionResponse;
 import model.DownloadTicket;
 import proxy.IProxy;
 import solution.AbstractTcpServer;
+import solution.communication.TCPChannel;
+import solution.fileserver.FileServer;
 import solution.model.MyFileServerInfo;
 import solution.model.MyUserInfo;
 import util.ChecksumUtils;
@@ -44,15 +43,15 @@ public class Proxy extends AbstractTcpServer implements IProxy {
 			"Error: No user logged in. Login first!");
 
 	// TODO what is this?
-	public Proxy(Socket socket, Set<AbstractTcpServer> connections) throws IOException {
-		super(socket, connections);
+	public Proxy(final TCPChannel tcpChannel, Set<AbstractTcpServer> connections) throws IOException {
+		super(tcpChannel, connections);
 		throw new IOException("Sorry, can't construct Proxy that way! :(");
 	}
 
-	public Proxy(final Socket socket, final ConcurrentHashMap<String, MyUserInfo> users,
+	public Proxy(final TCPChannel tcpChannel, final ConcurrentHashMap<String, MyUserInfo> users,
 			final ConcurrentHashMap<MyFileServerInfo, Long> fileservers, final Set<AbstractTcpServer> connections)
 			throws IOException {
-		super(socket, connections);
+		super(tcpChannel, connections);
 
 		this.users = users;
 		this.fileservers = fileservers;
@@ -265,24 +264,15 @@ public class Proxy extends AbstractTcpServer implements IProxy {
 	 * @throws IOException
 	 */
 	private Response receiveResponseFromServer(MyFileServerInfo mfs, Request request) throws IOException {
-		Socket fSocket = null;
-		ObjectOutputStream fOut = null;
-		ObjectInputStream fIn = null;
+		TCPChannel fsChannel = null;
 		try {
-			fSocket = new Socket(mfs.getAddress(), mfs.getPort());
-			fOut = new ObjectOutputStream(fSocket.getOutputStream());
-			fIn = new ObjectInputStream(fSocket.getInputStream());
-			fOut.writeObject(request);
-			Response resp = (Response) fIn.readObject();
-			fSocket.close();
+			fsChannel = new TCPChannel(mfs.getAddress(),mfs.getPort());
+			Response resp = (Response)fsChannel.contact(request);
+			fsChannel.close();
 			return resp;
 		} catch (ClassCastException e) {
-			fSocket.close();
-			println("classcast");
-			return null;
-		} catch (ClassNotFoundException e) {
-			println("classnotfoudnd");
-			fSocket.close();
+			fsChannel.close();
+			println("Received strange data via TCP, a ClassCastException occured!");
 			return null;
 		}
 	}
@@ -291,7 +281,7 @@ public class Proxy extends AbstractTcpServer implements IProxy {
 
 		Response r = receiveResponseFromServer(mfs, request);
 
-		if (r != null && r instanceof MessageResponse) {
+		if (r instanceof MessageResponse) {
 			return (MessageResponse) r;
 		} else {
 			return null;
@@ -302,7 +292,7 @@ public class Proxy extends AbstractTcpServer implements IProxy {
 
 		Response r = receiveResponseFromServer(mfs, request);
 
-		if (r != null && r instanceof VersionResponse) {
+		if (r instanceof VersionResponse) {
 			return (VersionResponse) r;
 		} else {
 			println("return null");
@@ -314,7 +304,7 @@ public class Proxy extends AbstractTcpServer implements IProxy {
 
 		Response r = receiveResponseFromServer(mfs, request);
 
-		if (r != null && r instanceof InfoResponse) {
+		if (r instanceof InfoResponse) {
 			return (InfoResponse) r;
 		} else {
 			return null;
@@ -325,7 +315,7 @@ public class Proxy extends AbstractTcpServer implements IProxy {
 
 		Response r = receiveResponseFromServer(mfs, request);
 
-		if (r != null && r instanceof ListResponse) {
+		if (r instanceof ListResponse) {
 			return (ListResponse) r;
 		} else {
 			return null;

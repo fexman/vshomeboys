@@ -8,6 +8,7 @@ import java.util.Set;
 
 import message.Request;
 import message.Response;
+import solution.communication.TCPChannel;
 import solution.util.requestProcessor.RequestHandlerUtil;
 
 /**
@@ -19,65 +20,56 @@ import solution.util.requestProcessor.RequestHandlerUtil;
  */
 public abstract class AbstractTcpServer extends Thread {
 
-	private final ObjectInputStream in;
-	private final ObjectOutputStream out;
-	private final Socket socket;
+	private final TCPChannel tcpChannel;
 	private boolean listening;
 
 	private final Set<AbstractTcpServer> connections;
 	private final String identString;
 
 	private final String threadStr;
-	private final String clientStr;
 
-	public AbstractTcpServer(final Socket socket, final Set<AbstractTcpServer> connections) throws IOException {
-		this.socket = socket;
-		this.in = new ObjectInputStream(socket.getInputStream());
-		this.out = new ObjectOutputStream(socket.getOutputStream());
+	public AbstractTcpServer(final TCPChannel tcpChannel, final Set<AbstractTcpServer> connections) throws IOException {
+		this.tcpChannel = tcpChannel;
 		this.listening = true;
 		this.connections = connections;
 
-		clientStr = socket.getInetAddress().getHostAddress() + " ...";
 		threadStr = "[TH" + this.getId() + "] ";
 
 		int saltVal = (int) (Math.random() * (10000 - 1000) + 1000);
-		identString = this.getId() + socket.getInetAddress().getHostAddress() + System.currentTimeMillis() + saltVal;
+		identString = this.getId() + tcpChannel.getConnectionInfo() + System.currentTimeMillis() + saltVal;
 
 	}
 
 	public void run() {
-		println("Spawned, serving: " + clientStr);
-		Object received;
+		println("Spawned, serving: " + tcpChannel.getConnectionInfo());
 
 		do {
 
 			try {
 
-				received = in.readObject();
+				Request received = (Request)tcpChannel.receive();
 
-				if (received instanceof Request) {
+				if (received != null) {
 					Request r = (Request) received;
-
-					Response resp = RequestHandlerUtil.handle(r, this);
+					Response resp = RequestHandlerUtil.handle(received, this);
 
 					if (resp != null) {
-						out.writeObject(resp);
+						tcpChannel.transmit(resp);
 					} else {
 						println("Received strange object via TCP: " + received.getClass());
 					}
 
+				} else { // connection errors
+					System.err.println("Lost connection to client " + tcpChannel.getConnectionInfo());
+					listening = false;
 				}
-				
-			} catch (IOException e) { // connection errors
-				System.err.println("Lost connection to client " + clientStr);
-				listening = false;
-			} catch (ClassNotFoundException e) {
-				System.err.println("Error: Received invalid object");
+			} catch (IOException e) {
+				println("Error: Lost connection.");
 				listening = false;
 			}
 
 		} while (listening);
-		println("Closing connection to " + clientStr); // listening = false,
+		println("Closing connection to " + tcpChannel.getConnectionInfo()); // listening = false,
 														// normal logout
 
 		shutDown();
@@ -96,11 +88,7 @@ public abstract class AbstractTcpServer extends Thread {
 		 * in.close(); } catch (IOException e) { //Nothing }
 		 */
 
-		try {
-			socket.close();
-		} catch (IOException e) {
-			// Nothing
-		}
+		tcpChannel.close();
 
 		connections.remove(this); // Unregister this abstract-tcpserverinstance
 

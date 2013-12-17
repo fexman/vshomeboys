@@ -3,3 +3,5 @@ lib/
 doc/
 reports/
 .project
+.pem
+.key

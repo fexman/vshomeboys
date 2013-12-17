@@ -2,7 +2,6 @@ package solution.fileserver;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.Socket;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -19,6 +18,7 @@ import message.response.VersionResponse;
 import model.DownloadTicket;
 import server.IFileServer;
 import solution.AbstractTcpServer;
+import solution.communication.TCPChannel;
 import solution.util.FileUtils;
 import util.ChecksumUtils;
 
@@ -27,9 +27,9 @@ public class FileServer extends AbstractTcpServer implements IFileServer {
 	private final String path;
 	ConcurrentHashMap<String, Integer> files;
 
-	public FileServer(Socket socket, Set<AbstractTcpServer> connections, String path,
+	public FileServer(final TCPChannel tcpChannel, Set<AbstractTcpServer> connections, String path,
 			ConcurrentHashMap<String, Integer> files) throws IOException {
-		super(socket, connections);
+		super(tcpChannel, connections);
 		this.path = path;
 		this.files = files;
 		stopListening();

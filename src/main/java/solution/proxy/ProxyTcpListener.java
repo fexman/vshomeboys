@@ -8,6 +8,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import solution.AbstractTcpListener;
 import solution.AbstractTcpServer;
+import solution.communication.TCPChannel;
 import solution.model.MyFileServerInfo;
 import solution.model.MyUserInfo;
 
@@ -31,7 +32,7 @@ public class ProxyTcpListener extends AbstractTcpListener {
 	@Override
 	public AbstractTcpServer createTcpServer(ServerSocket socket,
 			Set<AbstractTcpServer> connections) throws IOException {
-		return new Proxy(socket.accept(), users, fileservers, connections);
+		return new Proxy(new TCPChannel(socket.accept()), users, fileservers, connections);
 	}
 	
 }

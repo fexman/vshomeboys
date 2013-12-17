@@ -9,6 +9,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import solution.AbstractTcpListener;
 import solution.AbstractTcpServer;
+import solution.communication.TCPChannel;
 
 public class FileServerTcpListener extends AbstractTcpListener {
 
@@ -25,7 +26,7 @@ public class FileServerTcpListener extends AbstractTcpListener {
 
 	@Override
 	public AbstractTcpServer createTcpServer(ServerSocket socket, Set<AbstractTcpServer> connections) throws IOException {
-		return new FileServer(socket.accept(), connections, path, files);
+		return new FileServer(new TCPChannel(socket.accept()), connections, path, files);
 	}
 	
 	/**
