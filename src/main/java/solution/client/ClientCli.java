@@ -22,6 +22,7 @@ import message.response.DownloadTicketResponse;
 import message.response.LoginResponse;
 import message.response.MessageResponse;
 import model.DownloadTicket;
+import solution.communication.Base64TCPChannel;
 import solution.communication.Channel;
 import solution.communication.TCPChannel;
 import solution.util.FileUtils;
@@ -175,7 +176,7 @@ public class ClientCli implements IClientCli {
 			
 		if (proxyChannel == null) { //First time
 			try {
-				proxyChannel = new TCPChannel(InetAddress.getByName(proxyHost),proxyPort);
+				proxyChannel = new Base64TCPChannel(InetAddress.getByName(proxyHost),proxyPort);
 			}
 			catch (IOException e) {
 				return new MessageResponse("Couldn\'t connect to proxy. Is proxy online?") ;
@@ -185,7 +186,7 @@ public class ClientCli implements IClientCli {
 
 		if (!proxyChannel.connected()) { //Lost connection
 			try { //Try to establish new one
-				proxyChannel = new TCPChannel(InetAddress.getByName(proxyHost),proxyPort);
+				proxyChannel = new Base64TCPChannel(InetAddress.getByName(proxyHost),proxyPort);
 			}
 			catch (IOException e) {
 				return new MessageResponse("Couldn\'t connect to proxy. Is proxy online?") ;
