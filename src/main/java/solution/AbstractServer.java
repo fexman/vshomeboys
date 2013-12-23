@@ -8,7 +8,8 @@ import java.util.Set;
 
 import message.Request;
 import message.Response;
-import solution.communication.TCPChannel;
+import solution.communication.Channel;
+import solution.communication.TcpChannel;
 import solution.util.requestProcessor.RequestHandlerUtil;
 
 /**
@@ -18,49 +19,50 @@ import solution.util.requestProcessor.RequestHandlerUtil;
  * @author Felix
  * 
  */
-public abstract class AbstractTcpServer extends Thread {
+public abstract class AbstractServer extends Thread {
 
-	private final TCPChannel tcpChannel;
+	private final Channel channel;
 	private boolean listening;
 
-	private final Set<AbstractTcpServer> connections;
+	private final Set<AbstractServer> connections;
 	private final String identString;
 
 	private final String threadStr;
 
-	public AbstractTcpServer(final TCPChannel tcpChannel, final Set<AbstractTcpServer> connections) throws IOException {
-		this.tcpChannel = tcpChannel;
+	public AbstractServer(final Channel channel, final Set<AbstractServer> connections) throws IOException {
+		this.channel = channel;
 		this.listening = true;
 		this.connections = connections;
 
 		threadStr = "[TH" + this.getId() + "] ";
 
 		int saltVal = (int) (Math.random() * (10000 - 1000) + 1000);
-		identString = this.getId() + tcpChannel.getConnectionInfo() + System.currentTimeMillis() + saltVal;
+		identString = this.getId() + channel.getConnectionInfo() + System.currentTimeMillis() + saltVal;
 
 	}
 
 	public void run() {
-		println("Spawned, serving: " + tcpChannel.getConnectionInfo());
+		println("Spawned, serving: " + channel.getConnectionInfo());
 
 		do {
 
 			try {
 
-				Request received = (Request)tcpChannel.receive();
+				Request received = (Request)channel.receive();
+				//System.out.println(received.getClass());
 
 				if (received != null) {
 					Request r = (Request) received;
 					Response resp = RequestHandlerUtil.handle(received, this);
 
 					if (resp != null) {
-						tcpChannel.transmit(resp);
+						channel.transmit(resp);
 					} else {
 						println("Received strange object via TCP: " + received.getClass());
 					}
 
 				} else { // connection errors
-					System.err.println("Lost connection to client " + tcpChannel.getConnectionInfo());
+					System.err.println("Lost connection to client " + channel.getConnectionInfo());
 					listening = false;
 				}
 			} catch (IOException e) {
@@ -69,7 +71,7 @@ public abstract class AbstractTcpServer extends Thread {
 			}
 
 		} while (listening);
-		println("Closing connection to " + tcpChannel.getConnectionInfo()); // listening = false,
+		println("Closing connection to " + channel.getConnectionInfo()); // listening = false,
 														// normal logout
 
 		shutDown();
@@ -88,7 +90,7 @@ public abstract class AbstractTcpServer extends Thread {
 		 * in.close(); } catch (IOException e) { //Nothing }
 		 */
 
-		tcpChannel.close();
+		channel.close();
 
 		connections.remove(this); // Unregister this abstract-tcpserverinstance
 
@@ -141,7 +143,7 @@ public abstract class AbstractTcpServer extends Thread {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		AbstractTcpServer other = (AbstractTcpServer) obj;
+		AbstractServer other = (AbstractServer) obj;
 		if (identString == null) {
 			if (other.identString != null)
 				return false;

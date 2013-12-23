@@ -1,12 +1,20 @@
 package solution.proxy;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.crypto.KeyGenerator;
+import javax.crypto.SecretKey;
+
+import com.sun.org.apache.xml.internal.security.utils.Base64;
+
+import cli.Command;
 import message.Request;
 import message.Response;
 import message.request.BuyRequest;
@@ -26,48 +34,127 @@ import message.response.MessageResponse;
 import message.response.VersionResponse;
 import model.DownloadTicket;
 import proxy.IProxy;
-import solution.AbstractTcpServer;
-import solution.communication.TCPChannel;
+import solution.AbstractServer;
+import solution.communication.AESOperator;
+import solution.communication.Base64Operator;
+import solution.communication.Channel;
+import solution.communication.BiDirectionalRsaOperator;
+import solution.communication.TcpChannel;
 import solution.fileserver.FileServer;
+import solution.message.request.CryptedLoginRequest;
+import solution.message.response.CryptedLoginConfirmationResponse;
+import solution.message.response.CryptedLoginResponse;
 import solution.model.MyFileServerInfo;
 import solution.model.MyUserInfo;
 import util.ChecksumUtils;
 
-public class Proxy extends AbstractTcpServer implements IProxy {
+public class Proxy extends AbstractServer implements IProxy {
 
 	private ConcurrentHashMap<String, MyUserInfo> users;
 	private ConcurrentHashMap<MyFileServerInfo, Long> fileservers;
+	
+	private String pathToPrivateKey;
+	private String pathToKeys;
+	
+	private Channel channel;
 
 	private MyUserInfo user;
 	private static final MessageResponse RESPONSE_NOT_LOGGED_IN = new MessageResponse(
 			"Error: No user logged in. Login first!");
 
 	// TODO what is this?
-	public Proxy(final TCPChannel tcpChannel, Set<AbstractTcpServer> connections) throws IOException {
-		super(tcpChannel, connections);
+	public Proxy(final Channel channel, Set<AbstractServer> connections) throws IOException {
+		super(channel, connections);
 		throw new IOException("Sorry, can't construct Proxy that way! :(");
 	}
 
-	public Proxy(final TCPChannel tcpChannel, final ConcurrentHashMap<String, MyUserInfo> users,
-			final ConcurrentHashMap<MyFileServerInfo, Long> fileservers, final Set<AbstractTcpServer> connections)
+	public Proxy(final Channel channel, final ConcurrentHashMap<String, MyUserInfo> users,
+			final ConcurrentHashMap<MyFileServerInfo, Long> fileservers, final Set<AbstractServer> connections, String pathToPrivateKey, String pathToKeys)
 			throws IOException {
-		super(tcpChannel, connections);
+		super(channel, connections);
 
+		this.channel = channel;
 		this.users = users;
 		this.fileservers = fileservers;
+		
+		this.pathToPrivateKey = pathToPrivateKey;
+		this.pathToKeys = pathToKeys;
 	}
 
 	@Override
 	public LoginResponse login(LoginRequest request) throws IOException {
+		println("Got outdated login request for: " + request.getUsername());
+		println("This service is no longer supported.");
+		return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
+	}
+	
+	@Command
+	public LoginResponse login(CryptedLoginRequest request) {
+		
 		println("Got login request for: " + request.getUsername());
 		MyUserInfo u = users.get(request.getUsername());
-		if (u == null) { // User non existent
-			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
+		
+		try {
+			//Set 1dRSA to 2dRSA
+			channel.getOperators().set(0, new BiDirectionalRsaOperator(pathToKeys+"/"+u.getName()+".pub.pem",pathToPrivateKey,"12345"));
+		} catch (IOException e) {
+			println("RSA-Channel creation failed: " + e.getMessage());
+			shutDown();
 		}
-		if (!u.login(request.getPassword())) { // Wrong password, or already
-												// logged in
-			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
+		
+		//CHALLENGE
+		SecureRandom secureRandom = new SecureRandom(); 
+		byte[] number = new byte[32]; 
+		secureRandom.nextBytes(number);
+		String challenge = Base64.encode(number);
+		
+		//SECRET KEY
+		KeyGenerator generator = null;
+		try {
+			generator = KeyGenerator.getInstance("AES");
+		} catch (NoSuchAlgorithmException e1) {
+			//WON'T HAPPEN!
+		} 
+		generator.init(128); 
+		SecretKey key = generator.generateKey(); 
+		String keyStr = Base64.encode(key.getEncoded());
+		
+		//IV
+		number = new byte[16]; 
+		secureRandom.nextBytes(number);
+		String iv = Base64.encode(number);
+		
+		try {
+			channel.transmit(new CryptedLoginResponse(request.getChallenge(),challenge,keyStr,iv));
+		} catch (IOException e) {
+			println("CryptedLoginResponse transmit failed!");
+			shutDown();
 		}
+		
+		//SWITCH TO AES
+		try {
+			channel.getOperators().set(0, new AESOperator(key,number));
+		} catch (IOException e1) {
+			println("AES-Channel creation failed: " + e1.getMessage());
+			shutDown();
+		}
+		
+		
+		try {
+			CryptedLoginConfirmationResponse clcr = (CryptedLoginConfirmationResponse)channel.receive();
+			if (!clcr.getProxyChallenge().equals(challenge)) {
+				println("Wrong challenge received!");
+				shutDown();
+			}
+		} catch (IOException e) {
+			println("Receiving CryptedLoginConformationResponse failed!");
+			shutDown();
+		} catch (ClassCastException e) {
+			println("Receiving CryptedLoginConformationResponse failed - received shit!");
+			shutDown();
+		}
+		
+		println("Everything okay! AES is up an running!");
 		this.user = u;
 		return new LoginResponse(LoginResponse.Type.SUCCESS);
 	}
@@ -264,9 +351,9 @@ public class Proxy extends AbstractTcpServer implements IProxy {
 	 * @throws IOException
 	 */
 	private Response receiveResponseFromServer(MyFileServerInfo mfs, Request request) throws IOException {
-		TCPChannel fsChannel = null;
+		TcpChannel fsChannel = null;
 		try {
-			fsChannel = new TCPChannel(mfs.getAddress(),mfs.getPort());
+			fsChannel = new TcpChannel(mfs.getAddress(),mfs.getPort());
 			Response resp = (Response)fsChannel.contact(request);
 			fsChannel.close();
 			return resp;

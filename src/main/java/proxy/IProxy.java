@@ -2,6 +2,7 @@ package proxy;
 
 import java.io.IOException;
 
+import solution.message.request.CryptedLoginRequest;
 import message.Response;
 import message.request.BuyRequest;
 import message.request.DownloadTicketRequest;
@@ -29,6 +30,9 @@ public interface IProxy {
 	 * @throws IOException if an I/O error occurs
 	 */
 	LoginResponse login(LoginRequest request) throws IOException;
+	
+	LoginResponse login(CryptedLoginRequest request) throws IOException;
+	
 
 	/**
 	 * Retrieves the current amount of credits of the authenticated user.

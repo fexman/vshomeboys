@@ -17,17 +17,17 @@ import message.response.MessageResponse;
 import message.response.VersionResponse;
 import model.DownloadTicket;
 import server.IFileServer;
-import solution.AbstractTcpServer;
-import solution.communication.TCPChannel;
+import solution.AbstractServer;
+import solution.communication.TcpChannel;
 import solution.util.FileUtils;
 import util.ChecksumUtils;
 
-public class FileServer extends AbstractTcpServer implements IFileServer {
+public class FileServer extends AbstractServer implements IFileServer {
 
 	private final String path;
 	ConcurrentHashMap<String, Integer> files;
 
-	public FileServer(final TCPChannel tcpChannel, Set<AbstractTcpServer> connections, String path,
+	public FileServer(final TcpChannel tcpChannel, Set<AbstractServer> connections, String path,
 			ConcurrentHashMap<String, Integer> files) throws IOException {
 		super(tcpChannel, connections);
 		this.path = path;

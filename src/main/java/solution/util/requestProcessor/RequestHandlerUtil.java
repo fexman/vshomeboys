@@ -5,7 +5,8 @@ import java.util.HashMap;
 
 import proxy.IProxy;
 import server.IFileServer;
-import solution.AbstractTcpServer;
+import solution.AbstractServer;
+import solution.message.request.CryptedLoginRequest;
 import message.Request;
 import message.Response;
 import message.request.BuyRequest;
@@ -37,6 +38,7 @@ public class RequestHandlerUtil {
 		proxyHandlers.put(BuyRequest.class, new BuyRequestHandler());
 		proxyHandlers.put(CreditsRequest.class, new CreditsRequestHandler());
 		proxyHandlers.put(DownloadTicketRequest.class, new DownloadTicketRequestHandler());
+		proxyHandlers.put(CryptedLoginRequest.class, new CryptedLoginRequestHandler());
 		proxyHandlers.put(ListRequest.class, new ProxyListRequestHandler());
 		proxyHandlers.put(LogoutRequest.class, new LogoutRequestHandler());
 		proxyHandlers.put(LoginRequest.class, new LoginRequestHandler());
@@ -61,7 +63,7 @@ public class RequestHandlerUtil {
 	 * @throws IOException
 	 *             determined by behaviour of called methods
 	 */
-	public static Response handle(Request request, AbstractTcpServer server) throws IOException {
+	public static Response handle(Request request, AbstractServer server) throws IOException {
 
 		Response r = null;
 

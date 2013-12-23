@@ -17,18 +17,18 @@ import java.util.concurrent.Executors;
  *
  */
 
-public abstract class AbstractTcpListener extends Thread {
+public abstract class AbstractListener extends Thread {
 	private boolean listening;
 	private ExecutorService threadpool;
 	private ServerSocket socket;
 
-	private Set<AbstractTcpServer> connections;
+	private Set<AbstractServer> connections;
 	
-	public AbstractTcpListener(int port) throws SocketException, IOException {
+	public AbstractListener(int port) throws SocketException, IOException {
 		this.listening = true;
 		this.threadpool = Executors.newCachedThreadPool();
 		this.socket = new ServerSocket(port);
-		this.connections = Collections.newSetFromMap(new ConcurrentHashMap<AbstractTcpServer,Boolean>());
+		this.connections = Collections.newSetFromMap(new ConcurrentHashMap<AbstractServer,Boolean>());
 	}
 	
 	public void run() {
@@ -36,7 +36,7 @@ public abstract class AbstractTcpListener extends Thread {
 		while (listening) {
 
 			try {
-				AbstractTcpServer ts = createTcpServer(socket, connections);
+				AbstractServer ts = createServer(socket, connections);
 				connections.add(ts);
 				threadpool.execute(ts);
 			} catch (IOException e) {
@@ -54,7 +54,7 @@ public abstract class AbstractTcpListener extends Thread {
 	 */
 	public void shutDown() throws IOException {
 		listening = false;
-		for (AbstractTcpServer ts : connections) {
+		for (AbstractServer ts : connections) {
 			ts.shutDown();
 		}
 		threadpool.shutdownNow();
@@ -70,6 +70,6 @@ public abstract class AbstractTcpListener extends Thread {
 	 * @return
 	 * @throws IOException
 	 */
-	public abstract AbstractTcpServer createTcpServer(ServerSocket socket, Set<AbstractTcpServer> connections) throws IOException;
+	public abstract AbstractServer createServer(ServerSocket socket, Set<AbstractServer> connections) throws IOException;
 	
 }

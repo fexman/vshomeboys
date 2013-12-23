@@ -2,9 +2,7 @@ package solution.communication;
 
 import java.io.IOException;
 import java.io.Serializable;
-
-import message.Request;
-import message.Response;
+import java.util.ArrayList;
 
 /**
  * Represents a communication channel, e.g. a TCP-connection.
@@ -55,6 +53,14 @@ public interface Channel {
 	 * @return
 	 */
 	String getConnectionInfo();
+	
+	/**
+	 * Returns ArrayList of ChannelOperators to add/remove them to underlying channel.
+	 * @return
+	 */
+	ArrayList<ChannelOperator> getOperators();
+	
+	
 
 	
 }

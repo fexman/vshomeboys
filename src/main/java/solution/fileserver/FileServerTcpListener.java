@@ -7,11 +7,11 @@ import java.net.SocketException;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import solution.AbstractTcpListener;
-import solution.AbstractTcpServer;
-import solution.communication.TCPChannel;
+import solution.AbstractListener;
+import solution.AbstractServer;
+import solution.communication.TcpChannel;
 
-public class FileServerTcpListener extends AbstractTcpListener {
+public class FileServerTcpListener extends AbstractListener {
 
 	private String path;
 	private File dir;
@@ -25,8 +25,8 @@ public class FileServerTcpListener extends AbstractTcpListener {
 	}
 
 	@Override
-	public AbstractTcpServer createTcpServer(ServerSocket socket, Set<AbstractTcpServer> connections) throws IOException {
-		return new FileServer(new TCPChannel(socket.accept()), connections, path, files);
+	public AbstractServer createServer(ServerSocket socket, Set<AbstractServer> connections) throws IOException {
+		return new FileServer(new TcpChannel(socket.accept()), connections, path, files);
 	}
 	
 	/**

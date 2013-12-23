@@ -6,27 +6,35 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.ArrayList;
 
-public class TCPChannel implements Channel {
+public class TcpChannel implements Channel {
 
 	private final Socket socket;
 	private ObjectOutputStream out;
 	private ObjectInputStream in;
 	private boolean connected;
 	
-	public TCPChannel (Socket socket) throws IOException {
+	private ArrayList<ChannelOperator> operators;
+	
+	public TcpChannel (Socket socket) throws IOException {
 		this.socket = socket;
 		out = new ObjectOutputStream(socket.getOutputStream());
 		in = new ObjectInputStream(socket.getInputStream());
 		connected = true;
+		this.operators = new ArrayList<ChannelOperator>();
 	}
 	
-	public TCPChannel (InetAddress address, int port) throws IOException {
+	public TcpChannel (InetAddress address, int port) throws IOException {
 		this(new Socket(address,port));
 	}
 	
 	@Override
 	public void transmit(Serializable s) throws IOException {
+			for (ChannelOperator c : operators)
+			{
+				s = c.transmitOperation(s);
+			}
 			out.writeObject(s);
 	}
 
@@ -35,7 +43,11 @@ public class TCPChannel implements Channel {
 
 		while (true) {
 			try {
-				return (Serializable)in.readObject();
+				Serializable s = (Serializable)in.readObject();
+				for (int i = operators.size()-1;i >= 0; i--) {
+					s = operators.get(i).receiveOperation(s);
+				}
+				return s;
 			} catch (ClassNotFoundException e) {
 				//Continue listening
 			}
@@ -67,7 +79,16 @@ public class TCPChannel implements Channel {
 
 	@Override
 	public String getConnectionInfo() {
-		return "TCP/" +socket.getInetAddress().getHostAddress() + ":" +  socket.getPort();
+		String str = "TCP://" +socket.getInetAddress().getHostAddress() + ":" +  socket.getPort();
+		for (ChannelOperator c: operators) {
+			str += " "+c.OPERATOR_IDENT();
+		}
+		return str;
+	}
+
+	@Override
+	public ArrayList<ChannelOperator> getOperators() {
+		return operators;
 	}
 
 
