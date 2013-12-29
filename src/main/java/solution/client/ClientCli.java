@@ -95,7 +95,7 @@ public class ClientCli implements IClientCli {
 	@Command
 	@Override
 	public LoginResponse login(String username, String password) throws IOException {
-	
+		
 		SecureRandom secureRandom = new SecureRandom(); 
 		final byte[] number = new byte[32]; 
 		secureRandom.nextBytes(number);
@@ -104,8 +104,8 @@ public class ClientCli implements IClientCli {
 		try {
 			if (proxyChannel == null) {
 				 connectToProxy(username, password); //First time
-				} else {
-				if (!proxyChannel.connected()) { //Connection lost or cancelled
+			} else {
+				if (!loggedIn) { //Connection lost or cancelled
 					 connectToProxy(username, password); //
 				} else { //Already connected
 					System.out.println("Already connected, logout first.");
@@ -117,20 +117,20 @@ public class ClientCli implements IClientCli {
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
 		}
 		
-		Response r = contactProxy(new CryptedLoginRequest(username,challenge));
+		Response r = contactProxy(new CryptedLoginRequest(username,challenge)); //Init Login-Request
 		
-		if (!(r instanceof CryptedLoginResponse)) {
+		if (!(r instanceof CryptedLoginResponse)) { //Answer was not according to protocoll
 			System.out.println("Proxy did not respond with CryptedLoginResponse when expected.");
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS); 
 		}
 		CryptedLoginResponse clr = (CryptedLoginResponse)r;
 		
-		if (!clr.getClChallenge().equals(challenge)) {
+		if (!clr.getClChallenge().equals(challenge)) { //Challenge was not returned correctly
 			System.out.println("Challenge was not returned correctly!");
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS); 
 		}
 		
-		byte[] encodedKey = null;
+		byte[] encodedKey = null; //Get AES secret key
 		try {
 			encodedKey = Base64.decode(clr.getKey());
 		} catch (Base64DecodingException e) {
@@ -139,7 +139,7 @@ public class ClientCli implements IClientCli {
 		}
 		SecretKey key = new SecretKeySpec(encodedKey, 0, encodedKey.length, "AES");
 		
-		byte[] iv = null;
+		byte[] iv = null; //Get AES IV
 		try {
 			iv = Base64.decode(clr.getIv());
 		} catch (Base64DecodingException e) {
@@ -147,13 +147,14 @@ public class ClientCli implements IClientCli {
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS); 
 		}
 		
-		try {
+		try { //Create AES channel
 			proxyChannel.getOperators().set(0, new AESOperator(key,iv));
 		} catch (IOException e1) {
 			System.out.println("AES-Channel creation failed: " + e1.getMessage());
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
 		}
 		
+		//Confirm by returning Proxy challenge using AES channel
 		proxyChannel.transmit(new CryptedLoginConfirmationResponse(clr.getProxyChallenge()));
 		try {
 		LoginResponse lr = (LoginResponse)proxyChannel.receive();
@@ -162,7 +163,7 @@ public class ClientCli implements IClientCli {
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
 		}
 		
-		loggedIn = true;
+		loggedIn = true; //Login Successfull
 		return new LoginResponse(LoginResponse.Type.SUCCESS);
 	}
 
@@ -223,6 +224,7 @@ public class ClientCli implements IClientCli {
 	public MessageResponse logout() throws IOException {
 		MessageResponse r = (MessageResponse)contactProxy(new LogoutRequest());
 		proxyChannel.close();
+		loggedIn = false;
 		return r;
 	}
 
@@ -266,25 +268,17 @@ public class ClientCli implements IClientCli {
 	}
 	
 	private Response contactFileServer(InetAddress address, int port, Request request) {
-		Socket fSocket = null;
-		ObjectOutputStream fOut = null;
-		ObjectInputStream fIn = null;
+		Channel fileServerChannel;
 		try {
-			fSocket = new Socket(address,port);
-			fOut = new ObjectOutputStream(fSocket.getOutputStream());
-			fIn = new ObjectInputStream(fSocket.getInputStream());
-			fOut.writeObject(request);
-			Response resp = (Response)fIn.readObject();
-			fSocket.close();
+			fileServerChannel = new TcpChannel(address,port);
+			Response resp = (Response)fileServerChannel.contact(request);
+			fileServerChannel.close();
 			return resp;
 		} catch (IOException e) {
 			return new MessageResponse("Lost connection to proxy. Maybe proxy went offline?") ;
 		} catch (ClassCastException e) { 
 			return new MessageResponse("Received strange packet, was not a Response!");
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-			return new MessageResponse("Well, that should NOT happen! ClassNotFoundException!") ;
-		} 
+		}
 
 	}
 	

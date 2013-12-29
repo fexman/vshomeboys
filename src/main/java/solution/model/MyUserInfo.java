@@ -47,6 +47,10 @@ public class MyUserInfo {
 		return online;
 	}
 	
+	public void login() {
+		online = true;
+	}
+	
 	public void logout() {
 		online = false;
 	}

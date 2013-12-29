@@ -94,6 +94,10 @@ public class Proxy extends AbstractServer implements IProxy {
 		println("Got login request for: " + request.getUsername());
 		MyUserInfo u = users.get(request.getUsername());
 		
+		if (u.isOnline()) {
+			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
+		}
+		
 		try {
 			//Set 1dRSA to 2dRSA
 			channel.getOperators().set(0, new BiDirectionalRsaOperator(pathToKeys+"/"+u.getName()+".pub.pem",pathToPrivateKey,"12345"));
@@ -156,6 +160,7 @@ public class Proxy extends AbstractServer implements IProxy {
 		
 		println("Everything okay! AES is up an running!");
 		this.user = u;
+		user.login();
 		return new LoginResponse(LoginResponse.Type.SUCCESS);
 	}
 
@@ -330,7 +335,7 @@ public class Proxy extends AbstractServer implements IProxy {
 		if (user == null) {
 			return RESPONSE_NOT_LOGGED_IN;
 		}
-
+		user.logout();
 		stopListening();
 		return new MessageResponse("Successfully logged out.");
 	}
