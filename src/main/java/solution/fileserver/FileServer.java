@@ -2,6 +2,7 @@ package solution.fileserver;
 
 import java.io.File;
 import java.io.IOException;
+import java.security.Key;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -27,9 +28,9 @@ public class FileServer extends AbstractServer implements IFileServer {
 	private final String path;
 	ConcurrentHashMap<String, Integer> files;
 
-	public FileServer(final TcpChannel tcpChannel, Set<AbstractServer> connections, String path,
+	public FileServer(final TcpChannel tcpChannel, Set<AbstractServer> connections, Key HMacKey, String path,
 			ConcurrentHashMap<String, Integer> files) throws IOException {
-		super(tcpChannel, connections);
+		super(tcpChannel, connections, HMacKey);
 		this.path = path;
 		this.files = files;
 		stopListening();

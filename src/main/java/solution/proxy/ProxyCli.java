@@ -42,7 +42,7 @@ public class ProxyCli implements IProxyCli  {
 		
 		try {
 			pfl = new ProxyUdpListener(conf.getInt("udp.port"),conf.getInt("fileserver.timeout"), conf.getInt("fileserver.checkPeriod"),fileservers);
-			pcl = new ProxyTcpListener(conf.getInt("tcp.port"), users, fileservers, conf.getString("key"), conf.getString("keys.dir"));
+			pcl = new ProxyTcpListener(conf.getInt("tcp.port"), users, fileservers, conf.getString("key"), conf.getString("keys.dir"),conf.getString("hmac.key"));
 			pfl.start();
 			pcl.start();
 			shellThread = new Thread(shell);

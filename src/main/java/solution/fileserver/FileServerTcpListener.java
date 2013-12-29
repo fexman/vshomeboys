@@ -16,17 +16,19 @@ public class FileServerTcpListener extends AbstractListener {
 	private String path;
 	private File dir;
 	private ConcurrentHashMap<String, Integer> files;
+	private String pathToHMAC;
 	
-	public FileServerTcpListener(int port, String path) throws SocketException, IOException {
+	public FileServerTcpListener(int port, String path, String pathToHMAC) throws SocketException, IOException {
 		super(port);
 		this.path = path;
 		this.dir = new File(path);
 		files = createFileMap(path);
+		this.pathToHMAC = pathToHMAC;
 	}
 
 	@Override
 	public AbstractServer createServer(ServerSocket socket, Set<AbstractServer> connections) throws IOException {
-		return new FileServer(new TcpChannel(socket.accept()), connections, path, files);
+		return new FileServer(new TcpChannel(socket.accept()), connections, solution.util.CryptoUtil.getHMACKeyFromPath(pathToHMAC), path, files);
 	}
 	
 	/**

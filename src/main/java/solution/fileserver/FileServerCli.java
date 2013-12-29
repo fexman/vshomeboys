@@ -32,7 +32,7 @@ public abstract class FileServerCli implements IFileServerCli {
 		try {
 			ros = new ReportOnlineStatus(conf.getString("proxy.host"),conf.getInt("proxy.udp.port"),conf.getInt("tcp.port"));
 			t.schedule(ros, 0l, conf.getInt("fileserver.alive"));
-			tcpListener = new FileServerTcpListener(conf.getInt("tcp.port"),conf.getString("fileserver.dir"));
+			tcpListener = new FileServerTcpListener(conf.getInt("tcp.port"),conf.getString("fileserver.dir"),conf.getString("hmac.key"));
 			tcpListener.start();
 			shell.register(this);
 			shellThread = new Thread(shell);

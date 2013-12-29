@@ -2,10 +2,16 @@ package solution.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.security.Key;
+
+import javax.crypto.spec.SecretKeySpec;
+
+import org.bouncycastle.util.encoders.Hex;
 
 import com.sun.org.apache.xml.internal.security.exceptions.Base64DecodingException;
 import com.sun.org.apache.xml.internal.security.utils.Base64;
@@ -59,6 +65,21 @@ public class CryptoUtil {
 			System.err.println("received non-serializable object");
 		}
 		return s;
+	}
+	
+	public static Key getHMACKeyFromPath(String path) {
+		try {
+			byte[] keyBytes = new byte[1024];
+			FileInputStream fis = new FileInputStream(path);
+			fis.read(keyBytes);
+			fis.close();
+			byte[] input = Hex.decode(keyBytes);
+			return new SecretKeySpec(input,"HmacSHA256");
+		} catch (IOException e) {
+			System.out.println("Invalid key-path");
+			return null;
+		}
+
 	}
 
 }

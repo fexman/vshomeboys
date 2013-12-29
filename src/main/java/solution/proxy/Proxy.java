@@ -1,6 +1,7 @@
 package solution.proxy;
 
 import java.io.IOException;
+import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -63,15 +64,15 @@ public class Proxy extends AbstractServer implements IProxy {
 			"Error: No user logged in. Login first!");
 
 	// TODO what is this?
-	public Proxy(final Channel channel, Set<AbstractServer> connections) throws IOException {
-		super(channel, connections);
+	public Proxy(final Channel channel, Set<AbstractServer> connections, Key HMacKey) throws IOException {
+		super(channel, connections, HMacKey);
 		throw new IOException("Sorry, can't construct Proxy that way! :(");
 	}
 
-	public Proxy(final Channel channel, final ConcurrentHashMap<String, MyUserInfo> users,
-			final ConcurrentHashMap<MyFileServerInfo, Long> fileservers, final Set<AbstractServer> connections, String pathToPrivateKey, String pathToKeys)
+	public Proxy(final Channel channel, final Set<AbstractServer> connections, Key HMacKey, final ConcurrentHashMap<String, MyUserInfo> users,
+			final ConcurrentHashMap<MyFileServerInfo, Long> fileservers, String pathToPrivateKey, String pathToKeys)
 			throws IOException {
-		super(channel, connections);
+		super(channel, connections, HMacKey);
 
 		this.channel = channel;
 		this.users = users;

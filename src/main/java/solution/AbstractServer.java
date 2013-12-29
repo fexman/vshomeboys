@@ -1,15 +1,21 @@
 package solution;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.security.InvalidKeyException;
+import java.security.Key;
 import java.util.Set;
 
 import message.Request;
 import message.Response;
 import solution.communication.Channel;
 import solution.communication.TcpChannel;
+import solution.message.request.HMacRequest;
+import solution.message.response.HMacErrorResponse;
+import solution.message.response.HMacResponse;
 import solution.util.requestProcessor.RequestHandlerUtil;
 
 /**
@@ -28,11 +34,15 @@ public abstract class AbstractServer extends Thread {
 	private final String identString;
 
 	private final String threadStr;
+	protected final Key hMACKey;
 
-	public AbstractServer(final Channel channel, final Set<AbstractServer> connections) throws IOException {
+	public AbstractServer(final Channel channel, final Set<AbstractServer> connections, final Key hMACKey) throws IOException {
 		this.channel = channel;
 		this.listening = true;
 		this.connections = connections;
+		
+		//HMac
+		this.hMACKey = hMACKey;
 
 		threadStr = "[TH" + this.getId() + "] ";
 
@@ -43,20 +53,40 @@ public abstract class AbstractServer extends Thread {
 
 	public void run() {
 		println("Spawned, serving: " + channel.getConnectionInfo());
-
+		boolean receivedHMAC;
+		
 		do {
 
 			try {
 
-				Request received = (Request)channel.receive();
-				//System.out.println(received.getClass());
+				Object received = channel.receive();
 
 				if (received != null) {
 					Request r = (Request) received;
-					Response resp = RequestHandlerUtil.handle(received, this);
+					
+					if (r instanceof HMacRequest) {
+						HMacRequest Hreq = (HMacRequest)received;
+						received = Hreq.getRequest();
+
+						if (Hreq.getHMac() != new HMacRequest(r,hMACKey).getHMac()) {
+							println("Invalid HMAC: " + Hreq.toString());
+							channel.transmit(new HMacErrorResponse());
+							continue;
+						}
+		
+						receivedHMAC = true;
+					} else {
+						receivedHMAC = false;
+					}
+					
+					Response resp = RequestHandlerUtil.handle(r, this);
 
 					if (resp != null) {
-						channel.transmit(resp);
+						if (receivedHMAC) {
+							channel.transmit(new HMacResponse(resp,hMACKey));
+						} else {
+							channel.transmit(resp);
+						}
 					} else {
 						println("Received strange object via TCP: " + received.getClass());
 					}
@@ -67,6 +97,9 @@ public abstract class AbstractServer extends Thread {
 				}
 			} catch (IOException e) {
 				println("Error: Lost connection.");
+				listening = false;
+			} catch (InvalidKeyException e) {
+				println("Invalid HMAC-Key!");
 				listening = false;
 			}
 
