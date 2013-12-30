@@ -1,10 +1,12 @@
 package solution.proxy;
 
 import java.io.IOException;
+import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -43,8 +45,11 @@ import solution.communication.BiDirectionalRsaOperator;
 import solution.communication.TcpChannel;
 import solution.fileserver.FileServer;
 import solution.message.request.CryptedLoginRequest;
+import solution.message.request.HMacRequest;
 import solution.message.response.CryptedLoginConfirmationResponse;
 import solution.message.response.CryptedLoginResponse;
+import solution.message.response.HMacErrorResponse;
+import solution.message.response.HMacResponse;
 import solution.model.MyFileServerInfo;
 import solution.model.MyUserInfo;
 import util.ChecksumUtils;
@@ -358,10 +363,42 @@ public class Proxy extends AbstractServer implements IProxy {
 	 */
 	private Response receiveResponseFromServer(MyFileServerInfo mfs, Request request) throws IOException {
 		TcpChannel fsChannel = null;
+		boolean receivedValid = false;
 		try {
-			fsChannel = new TcpChannel(mfs.getAddress(),mfs.getPort());
-			Response resp = (Response)fsChannel.contact(request);
-			fsChannel.close();
+			Response resp = null;
+			int i = 1;
+			while (!receivedValid && i <= 10) { //Repeat complete request-operation if haven't received valid response yet, will repeat 10 times
+				
+				fsChannel = new TcpChannel(mfs.getAddress(),mfs.getPort());
+				
+				try {
+					resp = (Response)fsChannel.contact(new HMacRequest(request,hMACKey));
+					if (resp instanceof HMacErrorResponse) {
+						
+						println("Received HMacErrorResponse from fileserver.");
+						
+					} else {
+						
+						HMacResponse hresp = (HMacResponse)resp;
+						resp = hresp.getResponse();
+						HMacResponse verif = new HMacResponse(resp,hMACKey);
+						if (Arrays.equals(hresp.getHMac(),verif.getHMac())) {
+							receivedValid = true;
+						} else {
+							println("Received HMAC-response from fileserver: Invalid HMAC!\nRECEIVED: " + hresp.toString() + "\nEXPECTED: " + verif.toString());
+						}
+						println("Received HMAC-response from fileserver: HMAC was ok.");
+					}
+					
+				} catch (InvalidKeyException e) {
+					println("Invalid HMAC-Key!");
+				}
+				fsChannel.close();
+				i++;
+			}
+			if (i >= 10) {
+				return null;
+			}
 			return resp;
 		} catch (ClassCastException e) {
 			fsChannel.close();

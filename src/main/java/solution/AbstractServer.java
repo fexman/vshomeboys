@@ -4,9 +4,11 @@ import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Array;
 import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.Key;
+import java.util.Arrays;
 import java.util.Set;
 
 import message.Request;
@@ -66,14 +68,14 @@ public abstract class AbstractServer extends Thread {
 					
 					if (r instanceof HMacRequest) {
 						HMacRequest Hreq = (HMacRequest)received;
-						received = Hreq.getRequest();
-
-						if (Hreq.getHMac() != new HMacRequest(r,hMACKey).getHMac()) {
-							println("Invalid HMAC: " + Hreq.toString());
+						r = Hreq.getRequest();
+						HMacRequest verif = new HMacRequest(r,hMACKey);
+						if (!Arrays.equals(Hreq.getHMac(),verif.getHMac())) {
+							println("Invalid HMAC!\nRECEIVED: " + Hreq.toString() + "\nEXPECTED: " + verif.toString());
 							channel.transmit(new HMacErrorResponse());
 							continue;
 						}
-		
+						println("Received HMAC-request: HMAC was ok.");
 						receivedHMAC = true;
 					} else {
 						receivedHMAC = false;

@@ -256,13 +256,16 @@ public class ClientCli implements IClientCli {
 		}
 
 		if (!proxyChannel.connected()) { //Was logged in, but not connected
+			loggedIn = false;
 			return new MessageResponse("Couldn\'t connect to proxy. Is proxy online?") ;
 		}
 		
 		try {
 			return (Response)proxyChannel.contact(request);
 		} catch (IOException e) { //Connection error
+			loggedIn = false;
 			return new MessageResponse("Connection to Proxy lost.");
+
 		}
 
 	}
@@ -286,6 +289,7 @@ public class ClientCli implements IClientCli {
 		try {
 			proxyChannel = new TcpChannel(InetAddress.getByName(proxyHost),proxyPort);
 		} catch (IOException e) {
+			loggedIn = false;
 			throw new IOException("Connection attempt failed. Is proxy online?");
 		}
 		proxyChannel.getOperators().add(new BiDirectionalRsaOperator(proxyKeyPath,keyPath + username + ".pem",password));
