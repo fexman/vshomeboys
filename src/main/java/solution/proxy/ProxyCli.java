@@ -1,6 +1,10 @@
 package solution.proxy;
 
 import java.io.IOException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.MissingResourceException;
 import java.util.concurrent.ConcurrentHashMap;
@@ -27,6 +31,8 @@ public class ProxyCli implements IProxyCli  {
 	private Thread shellThread;
 	private ProxyTcpListener pcl;
 	private ProxyUdpListener pfl;
+	private IManagementComponent stub;
+    private IManagementComponent rmc;
 	
 	public static void main(String[] args) {
 		new ProxyCli(new Config("proxy"),new Shell("Proxy",System.out, System.in));
@@ -34,19 +40,27 @@ public class ProxyCli implements IProxyCli  {
 	
 	public ProxyCli(Config conf, Shell shell) {
 		this.shell = shell;
-		
+
 		users = new ConcurrentHashMap<String,MyUserInfo>(UserConfigParser.getUserMap());
 		fileservers = new ConcurrentHashMap<MyFileServerInfo,Long>();
-		
+
 		this.shell.register(this);
-		
+        Config mc = new Config("mc");
+
 		try {
-			pfl = new ProxyUdpListener(conf.getInt("udp.port"),conf.getInt("fileserver.timeout"), conf.getInt("fileserver.checkPeriod"),fileservers);
+
+		    Registry reg = LocateRegistry.createRegistry(mc.getInt("proxy.rmi.port"));
+            rmc = new ManagementComponent();
+            stub = (IManagementComponent) UnicastRemoteObject.exportObject(rmc, 0);
+            reg.rebind(mc.getString("binding.name"), stub);
+
+		    pfl = new ProxyUdpListener(conf.getInt("udp.port"),conf.getInt("fileserver.timeout"), conf.getInt("fileserver.checkPeriod"),fileservers);
 			pcl = new ProxyTcpListener(conf.getInt("tcp.port"), users, fileservers, conf.getString("key"), conf.getString("keys.dir"),conf.getString("hmac.key"));
 			pfl.start();
 			pcl.start();
 			shellThread = new Thread(shell);
 			shellThread.start();
+
 		} catch (MissingResourceException e) {
 			
 			System.out.println("Invalid usage! Missing resource: " + e.getKey());
@@ -56,8 +70,16 @@ public class ProxyCli implements IProxyCli  {
 			} catch (IOException e1) { //Should not happen!
 				System.out.println("Boy, that escalated quickly!");
 			}
-			
-		} catch (Exception e) { //No matter what happens, we have to shutdown
+
+        } catch (RemoteException e) {
+            e.printStackTrace();
+            try {
+                exit();
+            } catch (IOException e1) { //Should not happen!
+                System.out.println("Boy, that escalated quickly!");
+            }
+
+        } catch (Exception e) { //No matter what happens, we have to shutdown
 			
 			System.out.println("Error, could not set up listeners: "+e.getClass().getSimpleName()+" - "+e.getMessage()+"\nShutting down ...");
 			
@@ -67,8 +89,6 @@ public class ProxyCli implements IProxyCli  {
 				System.out.println("Boy, that escalated quickly!");
 			}
 		}
-		
-
 	}
 
 	@Override
@@ -95,19 +115,19 @@ public class ProxyCli implements IProxyCli  {
 	@Command
 	public MessageResponse exit() throws IOException {
 
-		if (pfl != null) {
+        UnicastRemoteObject.unexportObject(rmc, false);
+
+        if (pfl != null) {
 			pfl.shutDown();
 		}
-		
+
 		if (pcl != null) {
 			pcl.shutDown();
 		}
-		
+
 		//shell.close();
 		System.in.close();
 		
 		return new MessageResponse("");
 	}
-	
-
 }

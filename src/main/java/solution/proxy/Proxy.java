@@ -39,11 +39,9 @@ import model.DownloadTicket;
 import proxy.IProxy;
 import solution.AbstractServer;
 import solution.communication.AESOperator;
-import solution.communication.Base64Operator;
 import solution.communication.Channel;
 import solution.communication.BiDirectionalRsaOperator;
 import solution.communication.TcpChannel;
-import solution.fileserver.FileServer;
 import solution.message.request.CryptedLoginRequest;
 import solution.message.request.HMacRequest;
 import solution.message.response.CryptedLoginConfirmationResponse;
@@ -68,12 +66,12 @@ public class Proxy extends AbstractServer implements IProxy {
 	private static final MessageResponse RESPONSE_NOT_LOGGED_IN = new MessageResponse(
 			"Error: No user logged in. Login first!");
 
-	// TODO what is this?
+/*
 	public Proxy(final Channel channel, Set<AbstractServer> connections, Key HMacKey) throws IOException {
 		super(channel, connections, HMacKey);
 		throw new IOException("Sorry, can't construct Proxy that way! :(");
 	}
-
+*/
 	public Proxy(final Channel channel, final Set<AbstractServer> connections, Key HMacKey, final ConcurrentHashMap<String, MyUserInfo> users,
 			final ConcurrentHashMap<MyFileServerInfo, Long> fileservers, String pathToPrivateKey, String pathToKeys)
 			throws IOException {
