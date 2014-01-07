@@ -1,10 +1,7 @@
 package solution.client;
 
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.net.InetAddress;
-import java.net.Socket;
 import java.security.SecureRandom;
 import java.util.MissingResourceException;
 
@@ -31,7 +28,6 @@ import model.DownloadTicket;
 import solution.communication.AESOperator;
 import solution.communication.Base64Operator;
 import solution.communication.Channel;
-import solution.communication.ChannelOperator;
 import solution.communication.BiDirectionalRsaOperator;
 import solution.communication.TcpChannel;
 import solution.message.request.CryptedLoginRequest;
