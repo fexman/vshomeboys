@@ -3,3 +3,4 @@ lib/
 doc/
 reports/
 files/
+src/main/resources/user.properties
