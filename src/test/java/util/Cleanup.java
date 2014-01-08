@@ -16,5 +16,6 @@ public class Cleanup {
 
 		Util.resetUsers();
 		FileGenerator.resetDirectories();
+		System.out.println("Cleanup complete.");
 	}
 }

@@ -2,5 +2,6 @@ build/
 lib/
 doc/
 reports/
-files/
+files/client/
+files/fileserver*/
 src/main/resources/user.properties
