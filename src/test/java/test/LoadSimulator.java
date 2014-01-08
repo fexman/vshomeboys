@@ -23,7 +23,7 @@ public class LoadSimulator {
 
     public static void main(String[] args) throws Exception {
 
-    	Cleanup.cleanup();
+    	//Cleanup.cleanup();
         Config confClient = new Config("client");
         Config confTest = new Config("loadtest");
         ArrayList<ClientSimulator> clients = new ArrayList<ClientSimulator>();
@@ -39,7 +39,7 @@ public class LoadSimulator {
         int ratio = confTest.getInt("overwriteRatio");
 
         FileGenerator f = new FileGenerator(filesize);
-        Util.addUsers(noOfClients);
+        //Util.addUsers(noOfClients);
 
         // Start Proxy
 

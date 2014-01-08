@@ -89,13 +89,13 @@ public class ClientCli implements IClientCli {
 		this.mc_keys_dir = mc.getString("keys.dir");
 		
 		// set up mc
-		Registry reg = null;
+		/*Registry reg = null;
 		try {
 			reg = LocateRegistry.getRegistry(this.mc_proxy_host, this.mc_rmi_port);
 		} catch (RemoteException e1) {
 			System.out.println("could not locate mc registry");
 			e1.printStackTrace();
-		}
+		}*/
 		
 		// bind registry
 		//this.mc_object = new RMIInterface();
@@ -126,11 +126,7 @@ public class ClientCli implements IClientCli {
 	@Override
 	public LoginResponse login(String username, String password) throws IOException {
 		
-		SecureRandom secureRandom = new SecureRandom(); 
-		final byte[] number = new byte[32]; 
-		secureRandom.nextBytes(number);
-		String challenge = Base64.encode(number);
-		
+
 		try {
 			if (proxyChannel == null) {
 				 connectToProxy(username, password); //First time
@@ -147,9 +143,15 @@ public class ClientCli implements IClientCli {
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
 		}
 		
+		SecureRandom secureRandom = new SecureRandom(); 
+		final byte[] number = new byte[32]; 
+		secureRandom.nextBytes(number);
+		String challenge = Base64.encode(number);
+		
+		
 		Response r = contactProxy(new CryptedLoginRequest(username,challenge)); //Init Login-Request
 		
-		if (!(r instanceof CryptedLoginResponse)) { //Answer was not according to protocoll
+		if (!(r instanceof CryptedLoginResponse)) { //Answer was not according to protocol
 			System.out.println("Proxy did not respond with CryptedLoginResponse when expected.");
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS); 
 		}
@@ -177,7 +179,7 @@ public class ClientCli implements IClientCli {
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS); 
 		}
 		
-		try { //Create AES channel
+		try { //Create AES channel, RSA challenge is replaced
 			proxyChannel.getOperators().set(0, new AESOperator(key,iv));
 		} catch (IOException e1) {
 			System.out.println("AES-Channel creation failed: " + e1.getMessage());

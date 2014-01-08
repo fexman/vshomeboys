@@ -17,8 +17,8 @@ public class FileGenerator {
 
 	public final static int UTF8_RANGE_MIN = 0x30; // '0' alpha-numerical
 	public final static int UTF8_RANGE_MAX = 0x7E; // '~' values
-	public final static String UPLOAD_TXT = "dslab13";
-	public final static String SHORT_TXT = "Bitte die Lehrveranstaltung im TISS bewerten. ;-)";
+	public final static String UPLOAD_TXT = "Bitte die Lehrveranstaltung im TISS bewerten. ;-)";
+	public final static String SHORT_TXT = "dslab13\n";
 	public final static String LONG_TXT = "#####\n#####\n\n#####\n#####\n\n#####\n#####\n\n#####\n";
 
 	private ArrayList<String> existing; // client files

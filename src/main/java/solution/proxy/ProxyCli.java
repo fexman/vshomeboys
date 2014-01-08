@@ -42,7 +42,7 @@ public class ProxyCli implements IProxyCli  {
 	
 	public ProxyCli(Config conf, Shell shell) {
 		// read mc.properties
-		Config mc = new Config("mc");
+		/*Config mc = new Config("mc");
 		this.mc_proxy_host = mc.getString("proxy.host");
 		this.mc_binding_name = mc.getString("binding.name");
 		this.mc_rmi_port = mc.getInt("proxy.rmi.port");
@@ -54,7 +54,7 @@ public class ProxyCli implements IProxyCli  {
 		} catch (RemoteException e2) {
 			System.out.println("failed to create mc registry");
 			e2.printStackTrace();
-		}
+		}*/
 		
 		this.shell = shell;
 		
