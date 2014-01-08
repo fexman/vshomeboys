@@ -43,16 +43,16 @@ public class BiDirectionalRsaOperator extends ChannelOperator {
 			});
 		} catch (IOException e) {
 			throw new IOException("RSA failure: Unkown user! (key is missing)");
-		} finally {
-			in.close();
 		}
-		
+
 		PrivateKey privateKey = null;
 		try {
 			KeyPair keyPair = (KeyPair) in.readObject(); 
 			privateKey = keyPair.getPrivate();
 		} catch (IOException e) {
 			throw new IOException("RSA failure: Wrong password!");
+		} finally {
+			in.close();
 		}
 		
 		try {

@@ -1,4 +1,5 @@
 build/
-lib/
 doc/
 reports/
+files/client/f*
+files/fileserver*/f*

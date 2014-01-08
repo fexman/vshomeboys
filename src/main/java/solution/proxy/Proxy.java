@@ -56,31 +56,26 @@ public class Proxy extends AbstractServer implements IProxy {
 
 	private ConcurrentHashMap<String, MyUserInfo> users;
 	private ConcurrentHashMap<MyFileServerInfo, Long> fileservers;
-	
+
 	private String pathToPrivateKey;
 	private String pathToKeys;
-	
+
 	private Channel channel;
 
 	private MyUserInfo user;
 	private static final MessageResponse RESPONSE_NOT_LOGGED_IN = new MessageResponse(
 			"Error: No user logged in. Login first!");
 
-	// TODO what is this?
-	public Proxy(final Channel channel, Set<AbstractServer> connections, Key HMacKey) throws IOException {
-		super(channel, connections, HMacKey);
-		throw new IOException("Sorry, can't construct Proxy that way! :(");
-	}
-
-	public Proxy(final Channel channel, final Set<AbstractServer> connections, Key HMacKey, final ConcurrentHashMap<String, MyUserInfo> users,
-			final ConcurrentHashMap<MyFileServerInfo, Long> fileservers, String pathToPrivateKey, String pathToKeys)
-			throws IOException {
+	public Proxy(final Channel channel, final Set<AbstractServer> connections,
+			Key HMacKey, final ConcurrentHashMap<String, MyUserInfo> users,
+			final ConcurrentHashMap<MyFileServerInfo, Long> fileservers,
+			String pathToPrivateKey, String pathToKeys) throws IOException {
 		super(channel, connections, HMacKey);
 
 		this.channel = channel;
 		this.users = users;
 		this.fileservers = fileservers;
-		
+
 		this.pathToPrivateKey = pathToPrivateKey;
 		this.pathToKeys = pathToKeys;
 	}
@@ -91,65 +86,69 @@ public class Proxy extends AbstractServer implements IProxy {
 		println("This service is no longer supported.");
 		return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
 	}
-	
+
 	@Command
 	public LoginResponse login(CryptedLoginRequest request) {
-		
+
 		println("Got login request for: " + request.getUsername());
 		MyUserInfo u = users.get(request.getUsername());
-		
+
 		if (u.isOnline()) {
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
 		}
-		
+
 		try {
-			//Set 1dRSA to 2dRSA
-			channel.getOperators().set(0, new BiDirectionalRsaOperator(pathToKeys+"/"+u.getName()+".pub.pem",pathToPrivateKey,"12345"));
+			// Set 1dRSA to 2dRSA
+			channel.getOperators().set(
+					0,
+					new BiDirectionalRsaOperator(pathToKeys + "/" + u.getName()
+							+ ".pub.pem", pathToPrivateKey, "12345"));
 		} catch (IOException e) {
 			println("RSA-Channel creation failed: " + e.getMessage());
 			shutDown();
 		}
-		
-		//CHALLENGE
-		SecureRandom secureRandom = new SecureRandom(); 
-		byte[] number = new byte[32]; 
+
+		// CHALLENGE
+		SecureRandom secureRandom = new SecureRandom();
+		byte[] number = new byte[32];
 		secureRandom.nextBytes(number);
 		String challenge = Base64.encode(number);
-		
-		//SECRET KEY
+
+		// SECRET KEY
 		KeyGenerator generator = null;
 		try {
 			generator = KeyGenerator.getInstance("AES");
 		} catch (NoSuchAlgorithmException e1) {
-			//WON'T HAPPEN!
-		} 
-		generator.init(128); 
-		SecretKey key = generator.generateKey(); 
+			// WON'T HAPPEN!
+		}
+		generator.init(128);
+		SecretKey key = generator.generateKey();
 		String keyStr = Base64.encode(key.getEncoded());
-		
-		//IV
-		number = new byte[16]; 
+
+		// IV
+		number = new byte[16];
 		secureRandom.nextBytes(number);
 		String iv = Base64.encode(number);
-		
+
 		try {
-			channel.transmit(new CryptedLoginResponse(request.getChallenge(),challenge,keyStr,iv));
+			channel.transmit(new CryptedLoginResponse(request.getChallenge(),
+					challenge, keyStr, iv));
 		} catch (IOException e) {
 			println("CryptedLoginResponse transmit failed!");
 			shutDown();
 		}
-		
-		//SWITCH TO AES
+
+		// SWITCH TO AES
 		try {
-			channel.getOperators().set(0, new AESOperator(key,number));
+			channel.getOperators().set(0, new AESOperator(key, number));
 		} catch (IOException e1) {
 			println("AES-Channel creation failed: " + e1.getMessage());
 			shutDown();
 		}
-		
-		
+
 		try {
-			CryptedLoginConfirmationResponse clcr = (CryptedLoginConfirmationResponse)channel.receive();
+			CryptedLoginConfirmationResponse clcr = (CryptedLoginConfirmationResponse) channel
+					.receive();
 			if (!clcr.getProxyChallenge().equals(challenge)) {
 				println("Wrong challenge received!");
 				shutDown();
@@ -161,7 +160,7 @@ public class Proxy extends AbstractServer implements IProxy {
 			println("Receiving CryptedLoginConformationResponse failed - received shit!");
 			shutDown();
 		}
-		
+
 		println("Everything okay! AES is up an running!");
 		this.user = u;
 		user.login();
@@ -200,7 +199,8 @@ public class Proxy extends AbstractServer implements IProxy {
 
 		for (MyFileServerInfo i : servers) {
 
-			ListResponse resp = receiveListResponseFromServer(i, new ListRequest());
+			ListResponse resp = receiveListResponseFromServer(i,
+					new ListRequest());
 			if (resp != null) {
 				for (String s : resp.getFileNames()) {
 					fileNames.add(s);
@@ -230,9 +230,11 @@ public class Proxy extends AbstractServer implements IProxy {
 
 		for (MyFileServerInfo i : servers) {
 
-			VersionResponse resp = receiveVersionResponseFromServer(i, new VersionRequest(request.getFilename()));
+			VersionResponse resp = receiveVersionResponseFromServer(i,
+					new VersionRequest(request.getFilename()));
 			if (resp != null && resp.getVersion() > latestVersion) {
-				println("added server: " + i + ", new version: " + latestVersion);
+				println("added server: " + i + ", new version: "
+						+ latestVersion);
 				latestVersion = resp.getVersion();
 				chosen.add(i);
 			}
@@ -248,9 +250,11 @@ public class Proxy extends AbstractServer implements IProxy {
 		if (!chosen.isEmpty()) { // so the file exists
 
 			MyFileServerInfo server = chosen.get(chosen.size() - 1);
-			println("Chosen server : " + server + ", latest fileversion: " + latestVersion);
+			println("Chosen server : " + server + ", latest fileversion: "
+					+ latestVersion);
 
-			InfoResponse resp = receiveInfoResponseFromServer(server, new InfoRequest(request.getFilename()));
+			InfoResponse resp = receiveInfoResponseFromServer(server,
+					new InfoRequest(request.getFilename()));
 
 			if (resp != null) {
 				if (resp.getSize() > 0) {
@@ -260,10 +264,12 @@ public class Proxy extends AbstractServer implements IProxy {
 						return new MessageResponse("Not enough credits!");
 					}
 
-					String checksum = ChecksumUtils.generateChecksum(user.getName(), request.getFilename(),
+					String checksum = ChecksumUtils.generateChecksum(
+							user.getName(), request.getFilename(),
 							latestVersion, size);
 
-					DownloadTicket ticket = new DownloadTicket(user.getName(), request.getFilename(), checksum,
+					DownloadTicket ticket = new DownloadTicket(user.getName(),
+							request.getFilename(), checksum,
 							server.getAddress(), server.getPort());
 					user.modifyCredits(-size);
 					server.use(size);
@@ -276,7 +282,7 @@ public class Proxy extends AbstractServer implements IProxy {
 	}
 
 	@Override
-	// TODO usage of servers is not increased after upload (commented)
+	// SOLVED: usage of servers is not increased after upload (commented)
 	public MessageResponse upload(UploadRequest request) throws IOException {
 
 		String filename = request.getFilename();
@@ -300,7 +306,8 @@ public class Proxy extends AbstractServer implements IProxy {
 		 */
 		for (MyFileServerInfo i : servers) {
 
-			VersionResponse resp = receiveVersionResponseFromServer(i, new VersionRequest(filename));
+			VersionResponse resp = receiveVersionResponseFromServer(i,
+					new VersionRequest(filename));
 
 			if (resp != null) {
 
@@ -313,13 +320,16 @@ public class Proxy extends AbstractServer implements IProxy {
 		 * next, the file is uploaded to the write quorum
 		 */
 		servers = getOnlineFileServersByUsage(computeWriteQ());
-		println("number of servers, that receive the file = " + servers.size() + " (should be write-quorum)");
+		println("number of servers, that receive the file = " + servers.size()
+				+ " (should be write-quorum)");
 		for (MyFileServerInfo i : servers) {
 
-			MessageResponse resp = receiveMessageResponseFromServer(i, new UploadRequest(request.getFilename(),
-					version + 1, request.getContent()));
+			MessageResponse resp = receiveMessageResponseFromServer(i,
+					new UploadRequest(request.getFilename(), version + 1,
+							request.getContent()));
 			if (resp != null) {
-				if (resp.getMessage().equals("Error: Fileserver could not write file.")) {
+				if (resp.getMessage().equals(
+						"Error: Fileserver could not write file.")) {
 					// currentFS.use(size);
 					uploadFailed = true;
 				}
@@ -360,35 +370,43 @@ public class Proxy extends AbstractServer implements IProxy {
 	 *         is no response-object)
 	 * @throws IOException
 	 */
-	private Response receiveResponseFromServer(MyFileServerInfo mfs, Request request) throws IOException {
+	private Response receiveResponseFromServer(MyFileServerInfo mfs,
+			Request request) throws IOException {
 		TcpChannel fsChannel = null;
 		boolean receivedValid = false;
 		try {
 			Response resp = null;
 			int i = 1;
-			while (!receivedValid && i <= 10) { //Repeat complete request-operation if haven't received valid response yet, will repeat 10 times
-				
-				fsChannel = new TcpChannel(mfs.getAddress(),mfs.getPort());
-				
+			while (!receivedValid && i <= 10) { // Repeat complete
+												// request-operation if haven't
+												// received valid response yet,
+												// will repeat 10 times
+
+				fsChannel = new TcpChannel(mfs.getAddress(), mfs.getPort());
+
 				try {
-					resp = (Response)fsChannel.contact(new HMacRequest(request,hMACKey));
+					resp = (Response) fsChannel.contact(new HMacRequest(
+							request, hMACKey));
 					if (resp instanceof HMacErrorResponse) {
-						
+
 						println("Received HMacErrorResponse from fileserver.");
-						
+
 					} else {
-						
-						HMacResponse hresp = (HMacResponse)resp;
+
+						HMacResponse hresp = (HMacResponse) resp;
 						resp = hresp.getResponse();
-						HMacResponse verif = new HMacResponse(resp,hMACKey);
-						if (Arrays.equals(hresp.getHMac(),verif.getHMac())) {
+						HMacResponse verif = new HMacResponse(resp, hMACKey);
+						if (Arrays.equals(hresp.getHMac(), verif.getHMac())) {
 							receivedValid = true;
 						} else {
-							println("Received HMAC-response from fileserver: Invalid HMAC!\nRECEIVED: " + hresp.toString() + "\nEXPECTED: " + verif.toString());
+							println("Received HMAC-response from fileserver: Invalid HMAC!\nRECEIVED: "
+									+ hresp.toString()
+									+ "\nEXPECTED: "
+									+ verif.toString());
 						}
 						println("Received HMAC-response from fileserver: HMAC was ok.");
 					}
-					
+
 				} catch (InvalidKeyException e) {
 					println("Invalid HMAC-Key!");
 				}
@@ -406,7 +424,8 @@ public class Proxy extends AbstractServer implements IProxy {
 		}
 	}
 
-	private MessageResponse receiveMessageResponseFromServer(MyFileServerInfo mfs, Request request) throws IOException {
+	private MessageResponse receiveMessageResponseFromServer(
+			MyFileServerInfo mfs, Request request) throws IOException {
 
 		Response r = receiveResponseFromServer(mfs, request);
 
@@ -417,7 +436,8 @@ public class Proxy extends AbstractServer implements IProxy {
 		}
 	}
 
-	private VersionResponse receiveVersionResponseFromServer(MyFileServerInfo mfs, Request request) throws IOException {
+	private VersionResponse receiveVersionResponseFromServer(
+			MyFileServerInfo mfs, Request request) throws IOException {
 
 		Response r = receiveResponseFromServer(mfs, request);
 
@@ -429,7 +449,8 @@ public class Proxy extends AbstractServer implements IProxy {
 		}
 	}
 
-	private InfoResponse receiveInfoResponseFromServer(MyFileServerInfo mfs, Request request) throws IOException {
+	private InfoResponse receiveInfoResponseFromServer(MyFileServerInfo mfs,
+			Request request) throws IOException {
 
 		Response r = receiveResponseFromServer(mfs, request);
 
@@ -440,7 +461,8 @@ public class Proxy extends AbstractServer implements IProxy {
 		}
 	}
 
-	private ListResponse receiveListResponseFromServer(MyFileServerInfo mfs, Request request) throws IOException {
+	private ListResponse receiveListResponseFromServer(MyFileServerInfo mfs,
+			Request request) throws IOException {
 
 		Response r = receiveResponseFromServer(mfs, request);
 
@@ -474,7 +496,8 @@ public class Proxy extends AbstractServer implements IProxy {
 	 * by their usage.
 	 */
 	private List<MyFileServerInfo> getAllOnlineFileServersByUsage() {
-		ArrayList<MyFileServerInfo> servers = new ArrayList<MyFileServerInfo>(onlineFileServers().keySet());
+		ArrayList<MyFileServerInfo> servers = new ArrayList<MyFileServerInfo>(
+				onlineFileServers().keySet());
 		java.util.Collections.sort(servers);
 		return servers;
 	}
@@ -495,7 +518,7 @@ public class Proxy extends AbstractServer implements IProxy {
 	 *         but never more than the number of online servers.
 	 */
 	private int computeReadQ() {
-		return Math.min(serversOnline() - computeWriteQ() + 1,serversOnline());
+		return Math.min(serversOnline() - computeWriteQ() + 1, serversOnline());
 	}
 
 	/**

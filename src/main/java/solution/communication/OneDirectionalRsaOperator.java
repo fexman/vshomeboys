@@ -37,8 +37,6 @@ public class OneDirectionalRsaOperator extends ChannelOperator {
 		} catch (IOException e) {
 			throw new IOException("RSA failure: Unkown user! (key is missing)");
 
-		} finally {
-			in.close();
 		}
 
 		PrivateKey privateKey = null;
@@ -48,6 +46,9 @@ public class OneDirectionalRsaOperator extends ChannelOperator {
 			privateKey = keyPair.getPrivate();
 		} catch (IOException e) {
 			throw new IOException("RSA failure: Wrong password!");
+
+		} finally {
+			in.close();
 		}
 
 		try {

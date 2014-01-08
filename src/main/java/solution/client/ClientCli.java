@@ -156,7 +156,7 @@ public class ClientCli implements IClientCli {
 		proxyChannel.transmit(new CryptedLoginConfirmationResponse(clr.getProxyChallenge()));
 		try {
 			//TODO Fexi weiﬂ worums geht.
-		//LoginResponse lr = (LoginResponse) proxyChannel.receive();
+		LoginResponse lr = (LoginResponse) proxyChannel.receive();
 		} catch (ClassCastException e) {
 			System.out.println("Last conformation was not as expected!");
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);

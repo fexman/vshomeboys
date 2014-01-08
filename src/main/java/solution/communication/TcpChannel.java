@@ -68,7 +68,7 @@ public class TcpChannel implements Channel {
 		try {
 			socket.close();
 		} catch (IOException e) {
-			//Nothing TODO here
+			//Nothing todo here
 		}
 	}
 
