@@ -17,9 +17,6 @@ public class FileGenerator {
 
 	public final static int UTF8_RANGE_MIN = 0x30; // '0' alpha-numerical
 	public final static int UTF8_RANGE_MAX = 0x7E; // '~' values
-	public final static String UPLOAD_TXT = "Bitte die Lehrveranstaltung im TISS bewerten. ;-)";
-	public final static String SHORT_TXT = "dslab13\n";
-	public final static String LONG_TXT = "#####\n#####\n\n#####\n#####\n\n#####\n#####\n\n#####\n";
 
 	private ArrayList<String> existing; // client files
 	private Random random;
@@ -103,16 +100,6 @@ public class FileGenerator {
 	 * multiline.txt
 	 */
 	public static void resetDirectories() {
-
-		String[] fs = { "fileserver1", "fileserver2", "fileserver3",
-				"fileserver4" };
-
-		for (String s : fs) {
-			generateFile("files/" + s, "short.txt", SHORT_TXT);
-			generateFile("files/" + s, "long.txt", LONG_TXT);
-		}
-
-		generateFile("files/client", "upload.txt", UPLOAD_TXT);
 
 		deleteAllFilesOfDirectoryExcept("files/client", "upload.txt");
 		deleteAllFilesOfDirectoryExcept("files/fileserver1", "long.txt",

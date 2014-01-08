@@ -1,8 +1,6 @@
 package solution.RMI;
 
 import java.rmi.RemoteException;
-import java.util.SortedSet;
-import java.rmi.registry.*;
 
 public class RMIImplementation implements RMIInterface {
 

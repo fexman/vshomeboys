@@ -10,8 +10,6 @@ import solution.AbstractListener;
 import solution.AbstractServer;
 import solution.communication.Base64Operator;
 import solution.communication.Channel;
-import solution.communication.ChannelOperator;
-import solution.communication.BiDirectionalRsaOperator;
 import solution.communication.OneDirectionalRsaOperator;
 import solution.communication.TcpChannel;
 import solution.model.MyFileServerInfo;

@@ -32,7 +32,6 @@ public class Util {
 
 				printer.println("u" + i + ".credits=1000");
 				printer.println("u" + i + ".password=12345");
-				createUserRSAKeyPair("u" + i);
 			}
 
 		} catch (FileNotFoundException e) {
@@ -42,29 +41,5 @@ public class Util {
 
 			printer.close();
 		}
-	}
-
-	/**
-	 * Resets all content from user.properties
-	 */
-	public static void resetUsers() {
-
-		PrintWriter printer = null;
-
-		try {
-
-			printer = new PrintWriter("src/main/resources/user.properties");
-			printer.println(STANDARD_USERS);
-
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
-
-		} finally {
-			printer.close();
-		}
-	}
-
-	private static void createUserRSAKeyPair(String username) {
-
 	}
 }

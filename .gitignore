@@ -2,4 +2,3 @@ build/
 lib/
 doc/
 reports/
-src/main/resources/user.properties

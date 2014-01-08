@@ -25,7 +25,6 @@ import message.response.DownloadTicketResponse;
 import message.response.LoginResponse;
 import message.response.MessageResponse;
 import model.DownloadTicket;
-import solution.RMI.RMIInterface;
 import solution.communication.AESOperator;
 import solution.communication.Base64Operator;
 import solution.communication.Channel;
@@ -39,8 +38,6 @@ import util.Config;
 import cli.Command;
 import cli.Shell;
 import client.IClientCli;
-import java.rmi.registry.*;
-import java.rmi.RemoteException;
 
 public class ClientCli implements IClientCli {
 
@@ -52,15 +49,6 @@ public class ClientCli implements IClientCli {
 	private boolean loggedIn;
 	private String keyPath;
 	private String proxyKeyPath;
-	
-	// mc variables
-	private String mc_proxy_host;
-	private String mc_binding_name;
-	private int mc_rmi_port;
-	private String mc_keys_dir;
-	
-	// remote object
-	private RMIInterface mc_object;
 	
 	public static void main (String[] args) {
 		try {
@@ -80,28 +68,6 @@ public class ClientCli implements IClientCli {
 		
 		keyPath = conf.getString("keys.dir") + "/";
 		proxyKeyPath = conf.getString("proxy.key");
-		
-		// read mc.properties
-		Config mc = new Config("mc");
-		this.mc_proxy_host = mc.getString("proxy.host");
-		this.mc_binding_name = mc.getString("binding.name");
-		this.mc_rmi_port = mc.getInt("proxy.rmi.port");
-		this.mc_keys_dir = mc.getString("keys.dir");
-		
-		// set up mc
-		/*Registry reg = null;
-		try {
-			reg = LocateRegistry.getRegistry(this.mc_proxy_host, this.mc_rmi_port);
-		} catch (RemoteException e1) {
-			System.out.println("could not locate mc registry");
-			e1.printStackTrace();
-		}*/
-		
-		// bind registry
-		//this.mc_object = new RMIInterface();
-		
-		/*reg.bind(, obj)*/
-		
 		
 		loggedIn = false;
 		
@@ -189,7 +155,8 @@ public class ClientCli implements IClientCli {
 		//Confirm by returning Proxy challenge using AES channel
 		proxyChannel.transmit(new CryptedLoginConfirmationResponse(clr.getProxyChallenge()));
 		try {
-		LoginResponse lr = (LoginResponse)proxyChannel.receive();
+			//TODO Fexi weiﬂ worums geht.
+		//LoginResponse lr = (LoginResponse) proxyChannel.receive();
 		} catch (ClassCastException e) {
 			System.out.println("Last conformation was not as expected!");
 			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);

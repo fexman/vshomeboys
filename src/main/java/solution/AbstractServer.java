@@ -1,11 +1,6 @@
 package solution;
 
-import java.io.File;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.lang.reflect.Array;
-import java.net.Socket;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.util.Arrays;
@@ -14,7 +9,6 @@ import java.util.Set;
 import message.Request;
 import message.Response;
 import solution.communication.Channel;
-import solution.communication.TcpChannel;
 import solution.message.request.HMacRequest;
 import solution.message.response.HMacErrorResponse;
 import solution.message.response.HMacResponse;
