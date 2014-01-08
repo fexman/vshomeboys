@@ -2,6 +2,4 @@ build/
 lib/
 doc/
 reports/
-files/client/
-files/fileserver*/
 src/main/resources/user.properties
