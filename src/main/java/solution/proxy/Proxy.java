@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;
 
+import com.sun.org.apache.xml.internal.security.exceptions.Base64DecodingException;
 import com.sun.org.apache.xml.internal.security.utils.Base64;
 
 import cli.Command;
@@ -110,9 +111,9 @@ public class Proxy extends AbstractServer implements IProxy {
 
 		// CHALLENGE
 		SecureRandom secureRandom = new SecureRandom();
-		byte[] number = new byte[32];
-		secureRandom.nextBytes(number);
-		String challenge = Base64.encode(number);
+		byte[] challenge = new byte[32];
+		secureRandom.nextBytes(challenge);
+		String challengeStr = Base64.encode(challenge);
 
 		// SECRET KEY
 		KeyGenerator generator = null;
@@ -126,13 +127,13 @@ public class Proxy extends AbstractServer implements IProxy {
 		String keyStr = Base64.encode(key.getEncoded());
 
 		// IV
-		number = new byte[16];
+		byte[] number = new byte[16];
 		secureRandom.nextBytes(number);
 		String iv = Base64.encode(number);
 
 		try {
 			channel.transmit(new CryptedLoginResponse(request.getChallenge(),
-					challenge, keyStr, iv));
+					challengeStr, keyStr, iv));
 		} catch (IOException e) {
 			println("CryptedLoginResponse transmit failed!");
 			shutDown();
@@ -146,10 +147,13 @@ public class Proxy extends AbstractServer implements IProxy {
 			shutDown();
 		}
 
+		
 		try {
+			//COMPARE CHALLENGE
 			CryptedLoginConfirmationResponse clcr = (CryptedLoginConfirmationResponse) channel
 					.receive();
-			if (!clcr.getProxyChallenge().equals(challenge)) {
+			byte[] receivedChallenge = Base64.decode(clcr.getProxyChallenge());
+			if (!Arrays.equals(challenge,receivedChallenge)) {
 				println("Wrong challenge received!");
 				shutDown();
 			}
@@ -158,6 +162,9 @@ public class Proxy extends AbstractServer implements IProxy {
 			shutDown();
 		} catch (ClassCastException e) {
 			println("Receiving CryptedLoginConformationResponse failed - received shit!");
+			shutDown();
+		} catch (Base64DecodingException e) {
+			println("Error decoding received challenge!");
 			shutDown();
 		}
 

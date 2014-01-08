@@ -3,6 +3,7 @@ package solution.client;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.MissingResourceException;
 
 import javax.crypto.SecretKey;
@@ -101,12 +102,12 @@ public class ClientCli implements IClientCli {
 					 connectToProxy(username, password); //
 				} else { //Already connected
 					System.out.println("Already connected, logout first.");
-					return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
+					return loginfailed();
 				}
 			}
 		} catch (IOException e) {
 			System.out.println(e.getMessage());
-			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
+			return loginfailed();
 		}
 		
 		SecureRandom secureRandom = new SecureRandom(); 
@@ -114,18 +115,25 @@ public class ClientCli implements IClientCli {
 		secureRandom.nextBytes(number);
 		String challenge = Base64.encode(number);
 		
-		
 		Response r = contactProxy(new CryptedLoginRequest(username,challenge)); //Init Login-Request
 		
 		if (!(r instanceof CryptedLoginResponse)) { //Answer was not according to protocol
 			System.out.println("Proxy did not respond with CryptedLoginResponse when expected.");
-			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS); 
+			return loginfailed(); 
 		}
 		CryptedLoginResponse clr = (CryptedLoginResponse)r;
 		
-		if (!clr.getClChallenge().equals(challenge)) { //Challenge was not returned correctly
+		//Compare recevied challenge
+		byte[] chResponse;
+		try {
+			chResponse = Base64.decode(clr.getClChallenge());
+		} catch (Base64DecodingException e2) {
+			System.out.println("Error decoding received clChallenge!");
+			return loginfailed();
+		}
+		if (!Arrays.equals(chResponse, number)) { //Challenge was not returned correctly
 			System.out.println("Challenge was not returned correctly!");
-			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS); 
+			return loginfailed(); 
 		}
 		
 		byte[] encodedKey = null; //Get AES secret key
@@ -133,7 +141,7 @@ public class ClientCli implements IClientCli {
 			encodedKey = Base64.decode(clr.getKey());
 		} catch (Base64DecodingException e) {
 			System.out.println("AES-key decoding error!");
-			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS); 
+			return loginfailed(); 
 		}
 		SecretKey key = new SecretKeySpec(encodedKey, 0, encodedKey.length, "AES");
 		
@@ -142,28 +150,29 @@ public class ClientCli implements IClientCli {
 			iv = Base64.decode(clr.getIv());
 		} catch (Base64DecodingException e) {
 			System.out.println("AES-Iv decoding error!");
-			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS); 
+			return loginfailed(); 
 		}
 		
 		try { //Create AES channel, RSA challenge is replaced
 			proxyChannel.getOperators().set(0, new AESOperator(key,iv));
 		} catch (IOException e1) {
 			System.out.println("AES-Channel creation failed: " + e1.getMessage());
-			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
+			return loginfailed();
 		}
 		
 		//Confirm by returning Proxy challenge using AES channel
 		proxyChannel.transmit(new CryptedLoginConfirmationResponse(clr.getProxyChallenge()));
+		
+		LoginResponse lr;
 		try {
 			//TODO Fexi weiﬂ worums geht.
-		LoginResponse lr = (LoginResponse) proxyChannel.receive();
+			lr = (LoginResponse) proxyChannel.receive();
 		} catch (ClassCastException e) {
 			System.out.println("Last conformation was not as expected!");
-			return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
+			return loginfailed();
 		}
-		
 		loggedIn = true; //Login Successfull
-		return new LoginResponse(LoginResponse.Type.SUCCESS);
+		return lr;
 	}
 
 	@Command
@@ -222,7 +231,9 @@ public class ClientCli implements IClientCli {
 	@Override
 	public MessageResponse logout() throws IOException {
 		MessageResponse r = (MessageResponse)contactProxy(new LogoutRequest());
-		proxyChannel.close();
+		if (proxyChannel != null) {
+			proxyChannel.close();
+		}
 		loggedIn = false;
 		return r;
 	}
@@ -293,5 +304,13 @@ public class ClientCli implements IClientCli {
 		}
 		proxyChannel.getOperators().add(new BiDirectionalRsaOperator(proxyKeyPath,keyPath + username + ".pem",password));
 		proxyChannel.getOperators().add(new Base64Operator());
+	}
+	
+	private LoginResponse loginfailed() {
+		loggedIn = false;
+		if (proxyChannel != null) {
+			proxyChannel.close();
+		}
+		return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
 	}
 }

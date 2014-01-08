@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 
 /**
  * Abstract TcpListener implementation. Listens on given port and creates new tcp-connections
@@ -38,7 +39,12 @@ public abstract class AbstractListener extends Thread {
 			try {
 				AbstractServer ts = createServer(socket, connections);
 				connections.add(ts);
-				threadpool.execute(ts);
+				try {
+					threadpool.execute(ts);
+				} catch (RejectedExecutionException e) {
+					System.out.println(this.getClass().getSimpleName()+": rejected execution due shutdown.");
+				}
+				
 			} catch (IOException e) {
 				//PROBABLY: SOCKET HAS BEEN CLOSED -  DO NOTHING
 			}
@@ -57,9 +63,8 @@ public abstract class AbstractListener extends Thread {
 		for (AbstractServer ts : connections) {
 			ts.shutDown();
 		}
-		threadpool.shutdownNow();
 		socket.close();
-
+		threadpool.shutdownNow();
 	}
 	
 	/**
