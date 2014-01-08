@@ -54,7 +54,8 @@ import solution.model.MyUserInfo;
 import util.ChecksumUtils;
 
 public class Proxy extends AbstractServer implements IProxy {
-
+	private ProxyCli proxyInstance;
+	
 	private ConcurrentHashMap<String, MyUserInfo> users;
 	private ConcurrentHashMap<MyFileServerInfo, Long> fileservers;
 
@@ -79,6 +80,7 @@ public class Proxy extends AbstractServer implements IProxy {
 
 		this.pathToPrivateKey = pathToPrivateKey;
 		this.pathToKeys = pathToKeys;
+		this.proxyInstance = null;
 	}
 
 	@Override
@@ -229,6 +231,8 @@ public class Proxy extends AbstractServer implements IProxy {
 		println("servers online: " + getAllOnlineFileServersByUsage().size());
 		println("read quorum = " + computeReadQ());
 		println("write quorum = " + computeWriteQ());
+		this.proxyInstance.setReadQuorum(this.computeReadQ());
+		this.proxyInstance.setWriteQuorum(this.computeWriteQ());
 		/*
 		 * first, determine the highest version number
 		 */
@@ -327,6 +331,8 @@ public class Proxy extends AbstractServer implements IProxy {
 		 * next, the file is uploaded to the write quorum
 		 */
 		servers = getOnlineFileServersByUsage(computeWriteQ());
+		this.proxyInstance.setReadQuorum(this.computeReadQ());
+		this.proxyInstance.setWriteQuorum(this.computeWriteQ());
 		println("number of servers, that receive the file = " + servers.size()
 				+ " (should be write-quorum)");
 		for (MyFileServerInfo i : servers) {
@@ -508,7 +514,7 @@ public class Proxy extends AbstractServer implements IProxy {
 		java.util.Collections.sort(servers);
 		return servers;
 	}
-
+ 
 	/**
 	 * Returns a List of the first n available (online) fileservers, sorted
 	 * ascendingly by their usage.
@@ -546,5 +552,9 @@ public class Proxy extends AbstractServer implements IProxy {
 	private int serversOnline() {
 
 		return onlineFileServers().size();
+	}
+	
+	public void setProxyInstance(ProxyCli i) {
+		this.proxyInstance = i;
 	}
 }

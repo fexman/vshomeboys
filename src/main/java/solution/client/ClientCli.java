@@ -39,6 +39,10 @@ import util.Config;
 import cli.Command;
 import cli.Shell;
 import client.IClientCli;
+import java.rmi.NotBoundException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import solution.proxy.IManagementComponent;
 
 public class ClientCli implements IClientCli {
 
@@ -50,6 +54,7 @@ public class ClientCli implements IClientCli {
 	private boolean loggedIn;
 	private String keyPath;
 	private String proxyKeyPath;
+	private IManagementComponent mc;
 	
 	public static void main (String[] args) {
 		try {
@@ -72,6 +77,11 @@ public class ClientCli implements IClientCli {
 		
 		loggedIn = false;
 		
+		Config mcConfig = new Config("mc");
+		Registry reg = LocateRegistry.getRegistry(mcConfig.getString("proxy.host"),
+                mcConfig.getInt("proxy.rmi.port"));
+        mc = (IManagementComponent) reg.lookup(mcConfig.getString("binding.name"));
+		
 		shell.register(this);
 		shellThread = new Thread(shell);
 		shellThread.start();
@@ -85,7 +95,10 @@ public class ClientCli implements IClientCli {
 				System.out.println("Boy, that escalated quickly!");
 			}
 			
-		} 
+		} catch (NotBoundException e) {
+            System.out.println("Error: RMI Not bound.");
+            exit();
+        }
 
 	}
 	
@@ -165,7 +178,7 @@ public class ClientCli implements IClientCli {
 		
 		LoginResponse lr;
 		try {
-			//TODO Fexi weiﬂ worums geht.
+			//TODO Fexi wei√ü worums geht.
 			lr = (LoginResponse) proxyChannel.receive();
 		} catch (ClassCastException e) {
 			System.out.println("Last conformation was not as expected!");
@@ -313,4 +326,36 @@ public class ClientCli implements IClientCli {
 		}
 		return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
 	}
+
+	@Command
+    public MessageResponse readQuorum() throws IOException {
+        return new MessageResponse("Read-Quorum is set to " + mc.readQuorum());
+    }
+
+    @Command
+    public MessageResponse writeQuorum() throws IOException {
+        return new MessageResponse("Write-Quorum is set to " + mc.writeQuorum());
+    }
+
+    @Command
+    public MessageResponse topThreeDownloads() throws IOException {
+        return new MessageResponse("Top Three Downloads " + mc.topThreeDownloads());
+    }
+
+    @Command
+    public MessageResponse subscribe(String filename, int noOfDls) throws IOException {
+        return new MessageResponse("subscribe: " + mc.subscribe("foo", 1));
+    }
+
+    @Command
+    public MessageResponse getProxyPublicKey() throws IOException {
+        return new MessageResponse("proxy public key: " + mc.getProxyPublicKey());
+    }
+
+    @Command
+    public MessageResponse setUserPublicKey(String user) throws IOException {
+        return new MessageResponse("user public key: " + mc.setUserPublicKey());
+    }
 }
+
+

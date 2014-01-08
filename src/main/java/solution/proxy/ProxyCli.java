@@ -18,6 +18,10 @@ import solution.util.UserConfigParser;
 import util.Config;
 import cli.Command;
 import cli.Shell;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
 public class ProxyCli implements IProxyCli {
 
@@ -27,6 +31,26 @@ public class ProxyCli implements IProxyCli {
 	private Thread shellThread;
 	private ProxyTcpListener pcl;
 	private ProxyUdpListener pfl;
+	private IManagementComponent stub;
+    private IManagementComponent rmc;
+    public int readQuorum;
+    public int writeQuorum;
+
+	public int getReadQuorum() {
+		return readQuorum;
+	}
+
+	public void setReadQuorum(int readQuorum) {
+		this.readQuorum = readQuorum;
+	}
+
+	public int getWriteQuorum() {
+		return writeQuorum;
+	}
+
+	public void setWriteQuorum(int writeQuorum) {
+		this.writeQuorum = writeQuorum;
+	}
 
 	public static void main(String[] args) {
 		new ProxyCli(new Config("proxy"), new Shell("Proxy", System.out,
@@ -44,6 +68,18 @@ public class ProxyCli implements IProxyCli {
 		this.shell.register(this);
 
 		try {
+			// register rmi
+			Config mc = new Config("mc");
+			Registry reg = LocateRegistry.createRegistry(mc.getInt("proxy.rmi.port"));
+            rmc = new ManagementComponent();
+            stub = (IManagementComponent) UnicastRemoteObject.exportObject(rmc, 0);
+            reg.rebind(mc.getString("binding.name"), stub);
+            
+            // init managementComponent
+            rmc.setProxyInstance(this);
+            this.readQuorum = 0;
+            this.writeQuorum = 0;
+			
 			pfl = new ProxyUdpListener(conf.getInt("udp.port"),
 					conf.getInt("fileserver.timeout"),
 					conf.getInt("fileserver.checkPeriod"), fileservers);
