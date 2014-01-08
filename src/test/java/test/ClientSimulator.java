@@ -24,7 +24,17 @@ public class ClientSimulator implements Runnable {
         this.c = c;
         this.f = f;
         running = true;
-        opRatio = (float) uploads / downloads;
+        
+        if (uploads + downloads == 0) {
+        	throw new IllegalArgumentException("uploads + downloads must be > 0");
+        }
+
+        if (uploads > 0 && downloads > 0) {
+        	opRatio = uploads <= downloads ? (float) uploads / downloads : (float) 1 - (downloads / uploads);
+        } else {
+        	opRatio = uploads == 0 ? 0 : 1;
+        }
+
         opInterval = 60000 / (uploads + downloads);                             
         this.uploadRatio = (float) uploadRatio / 100;
         random = new Random();

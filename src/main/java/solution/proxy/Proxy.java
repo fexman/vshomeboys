@@ -39,11 +39,9 @@ import model.DownloadTicket;
 import proxy.IProxy;
 import solution.AbstractServer;
 import solution.communication.AESOperator;
-import solution.communication.Base64Operator;
 import solution.communication.Channel;
 import solution.communication.BiDirectionalRsaOperator;
 import solution.communication.TcpChannel;
-import solution.fileserver.FileServer;
 import solution.message.request.CryptedLoginRequest;
 import solution.message.request.HMacRequest;
 import solution.message.response.CryptedLoginConfirmationResponse;
@@ -284,6 +282,7 @@ public class Proxy extends AbstractServer implements IProxy {
 		String filename = request.getFilename();
 		println("Got upload request for: " + filename);
 		println("write quorum: " + computeWriteQ());
+		println("read quorum: " + computeReadQ());
 
 		if (user == null) {
 			return RESPONSE_NOT_LOGGED_IN;

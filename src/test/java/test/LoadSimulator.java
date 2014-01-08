@@ -38,13 +38,15 @@ public class LoadSimulator {
         int ratio = confTest.getInt("overwriteRatio");
 
         FileGenerator f = new FileGenerator(filesize);
+        Util.addUsers(noOfClients);
 
         // Start Proxy
 
         IProxyCli proxy = comp.startProxy(new Config("proxy"), new Shell("proxy", System.out, testInput));
         IFileServerCli fs1 = comp.startFileServer(new Config("fs1"), new Shell("fs1", System.out, testInput));
         IFileServerCli fs2 = comp.startFileServer(new Config("fs2"), new Shell("fs2", System.out, testInput));
-        Util.addUsers(noOfClients);
+        IFileServerCli fs3 = comp.startFileServer(new Config("fs3"), new Shell("fs3", System.out, testInput));
+        IFileServerCli fs4 = comp.startFileServer(new Config("fs4"), new Shell("fs4", System.out, testInput));
 
         for (int i = 0; i < noOfClients; i++) {
 
@@ -65,6 +67,8 @@ public class LoadSimulator {
         proxy.exit();
         fs1.exit();
         fs2.exit();
+        fs3.exit();
+        fs4.exit();
         testInput.close();
         threadpool.shutdown();
         Cleanup.cleanup();
