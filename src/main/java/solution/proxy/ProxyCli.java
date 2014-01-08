@@ -18,6 +18,8 @@ import solution.util.UserConfigParser;
 import util.Config;
 import cli.Command;
 import cli.Shell;
+import java.rmi.registry.*;
+import java.rmi.RemoteException;
 
 public class ProxyCli implements IProxyCli  {
 	
@@ -27,12 +29,33 @@ public class ProxyCli implements IProxyCli  {
 	private Thread shellThread;
 	private ProxyTcpListener pcl;
 	private ProxyUdpListener pfl;
+
+	// mc variables
+	private String mc_proxy_host;
+	private String mc_binding_name;
+	private int mc_rmi_port;
+	private String mc_keys_dir;
 	
 	public static void main(String[] args) {
 		new ProxyCli(new Config("proxy"),new Shell("Proxy",System.out, System.in));
 	}
 	
 	public ProxyCli(Config conf, Shell shell) {
+		// read mc.properties
+		Config mc = new Config("mc");
+		this.mc_proxy_host = mc.getString("proxy.host");
+		this.mc_binding_name = mc.getString("binding.name");
+		this.mc_rmi_port = mc.getInt("proxy.rmi.port");
+		this.mc_keys_dir = mc.getString("keys.dir");
+		
+		// set up mc
+		try {
+			LocateRegistry.createRegistry(this.mc_rmi_port);
+		} catch (RemoteException e2) {
+			System.out.println("failed to create mc registry");
+			e2.printStackTrace();
+		}
+		
 		this.shell = shell;
 		
 		users = new ConcurrentHashMap<String,MyUserInfo>(UserConfigParser.getUserMap());
