@@ -23,6 +23,7 @@ public class LoadSimulator {
 
     public static void main(String[] args) throws Exception {
 
+    	Cleanup.cleanup();
         Config confClient = new Config("client");
         Config confTest = new Config("loadtest");
         ArrayList<ClientSimulator> clients = new ArrayList<ClientSimulator>();
