@@ -5,10 +5,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import proxy.IProxyCli;
-
 import cli.Shell;
 import cli.TestInputStream;
 import server.IFileServerCli;
+import util.Cleanup;
 import util.ComponentFactory;
 import util.Config;
 import util.FileGenerator;
@@ -67,5 +67,6 @@ public class LoadSimulator {
         fs2.exit();
         testInput.close();
         threadpool.shutdown();
+        Cleanup.cleanup();
     }
 }
