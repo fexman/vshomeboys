@@ -3,8 +3,14 @@ package solution.proxy;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.Collections;
-
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.Path;
 import solution.model.FileInfo;
+import util.Config;
 
 
 public class ManagementComponent implements IManagementComponent {
@@ -53,15 +59,44 @@ public class ManagementComponent implements IManagementComponent {
 	}
 
 	@Override
-	public String getProxyPublicKey() throws RemoteException {
-		// TODO Auto-generated method stub
-		return "proxy public key";
+	public byte[] getProxyPublicKey() throws RemoteException {
+		Config conf = new Config("proxy");
+		String keysDir = conf.getString("keys.dir");
+		
+		Path path = Paths.get(keysDir+"/proxy.pub.pem");
+		byte[] data = null;
+		try {
+			data = Files.readAllBytes(path);
+		} catch (IOException e) {
+			System.out.println("could not read file proxy.pub.pem");
+		}
+		
+		return data;
 	}
 
 	@Override
-	public boolean setUserPublicKey() throws RemoteException {
-		// TODO Auto-generated method stub
-		return false;
+	public boolean setUserPublicKey(String user, byte [] publicKey) throws RemoteException {
+		Config conf = new Config("proxy");
+		String keysDir = conf.getString("keys.dir");
+		
+		Path path = Paths.get(keysDir+"/"+user+".pub.pem");
+
+		try {
+			FileOutputStream fos = new FileOutputStream(path.toString());
+			fos.write(publicKey);
+			fos.close();
+		} catch(FileNotFoundException ex)
+		{
+			System.out.println("FileNotFoundException : " + ex);
+			return false;
+		}
+		catch(IOException ioe)
+		{
+			System.out.println("IOException : " + ioe);
+			return false;
+		}
+		
+		return true;
 	}
 
 	public void setProxyInstance(ProxyCli i) throws RemoteException {

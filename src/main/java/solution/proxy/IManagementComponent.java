@@ -36,11 +36,21 @@ public interface IManagementComponent extends Remote {
     //TODO: to be implemented
     public String subscribe(String filename, int numberOfDownloads) throws RemoteException;
 
-    //TODO: to be implemented
-    public String getProxyPublicKey() throws RemoteException;
+    /**
+     * Gets the public key from the proxy
+     * @return proxy public key in bytes
+     * @throws RemoteException
+     */
+    public byte[] getProxyPublicKey() throws RemoteException;
     
-    //TODO: to be implemented
-    public boolean setUserPublicKey() throws RemoteException;
+    /**
+     * Sends public key of a user to proxy
+     * @param user, username
+     * @param file, public key file
+     * @return true if success, false if failure
+     * @throws RemoteException
+     */
+    public boolean setUserPublicKey(String user, byte [] file) throws RemoteException;
 
     public void setProxyInstance(ProxyCli i) throws RemoteException;
 }
