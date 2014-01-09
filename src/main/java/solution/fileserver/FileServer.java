@@ -117,6 +117,10 @@ public class FileServer extends AbstractServer implements IFileServer {
 	 */
 	private void versionFile(String filename, int version) {
 		FileInfo fi = files.get(filename);
+		if (fi == null) {
+			fi = new FileInfo();
+			fi.setFilename(filename);
+		} 
 		fi.setVersion(version);
 		files.put(filename, fi);
 	}
