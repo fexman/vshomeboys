@@ -20,11 +20,14 @@ public interface IClientCli {
 	 * {@code !login success}<br/>
 	 * or<br/>
 	 * {@code !login wrong_credentials}
-	 *
-	 * @param username the name of the user
-	 * @param password the password
+	 * 
+	 * @param username
+	 *            the name of the user
+	 * @param password
+	 *            the password
 	 * @return status whether the authentication was successful or not
-	 * @throws IOException if an I/O error occurs
+	 * @throws IOException
+	 *             if an I/O error occurs
 	 */
 	LoginResponse login(String username, String password) throws IOException;
 
@@ -35,11 +38,13 @@ public interface IClientCli {
 	 * {@code !credits}<br/>
 	 * <b>Response:</b><br/>
 	 * {@code !credits &lt;total_credits&gt;}<br/>
-	 *
-	 * @return a {@link message.response.CreditsResponse CreditsResponse} containing the amount of credits<br/>
-	 * OR<br/>
-	 * a {@link MessageResponse} if an error occurred
-	 * @throws IOException if an I/O error occurs
+	 * 
+	 * @return a {@link message.response.CreditsResponse CreditsResponse}
+	 *         containing the amount of credits<br/>
+	 *         OR<br/>
+	 *         a {@link MessageResponse} if an error occurred
+	 * @throws IOException
+	 *             if an I/O error occurs
 	 */
 	Response credits() throws IOException;
 
@@ -50,12 +55,15 @@ public interface IClientCli {
 	 * {@code !buy &lt;amount&gt;}<br/>
 	 * <b>Response:</b><br/>
 	 * {@code !credits &lt;total_credits&gt;}<br/>
-	 *
-	 * @param credits the amount of credits to buy
-	 * @return a {@link message.response.BuyResponse BuyResponse} containing the current amount of credits<br/>
-	 * OR<br/>
-	 * a {@link MessageResponse} if an error occurred
-	 * @throws IOException if an I/O error occurs
+	 * 
+	 * @param credits
+	 *            the amount of credits to buy
+	 * @return a {@link message.response.BuyResponse BuyResponse} containing the
+	 *         current amount of credits<br/>
+	 *         OR<br/>
+	 *         a {@link MessageResponse} if an error occurred
+	 * @throws IOException
+	 *             if an I/O error occurs
 	 */
 	Response buy(long credits) throws IOException;
 
@@ -70,11 +78,13 @@ public interface IClientCli {
 	 * {@code &lt;filename1&gt;}<br/>
 	 * {@code &lt;filename2&gt;}<br/>
 	 * {@code ...}<br/>
-	 *
-	 * @return a {@link message.response.ListResponse ListResponse} containing file names (can be empty)<br/>
-	 * OR<br/>
-	 * a {@link MessageResponse} if an error occurred
-	 * @throws IOException if an I/O error occurs
+	 * 
+	 * @return a {@link message.response.ListResponse ListResponse} containing
+	 *         file names (can be empty)<br/>
+	 *         OR<br/>
+	 *         a {@link MessageResponse} if an error occurred
+	 * @throws IOException
+	 *             if an I/O error occurs
 	 */
 	Response list() throws IOException;
 
@@ -89,12 +99,15 @@ public interface IClientCli {
 	 * {@code !download &lt;ticket&gt;}<br/>
 	 * <b>Response (server to client):</b><br/>
 	 * {@code !data &lt;content&gt;}<br/>
-	 *
-	 * @param filename the name of the file to download
-	 * @return a {@link message.response.DownloadFileResponse DownloadFileResponse} containing the content<br/>
-	 * OR<br/>
-	 * a {@link MessageResponse} if an error occurred
-	 * @throws IOException if an I/O error occurs
+	 * 
+	 * @param filename
+	 *            the name of the file to download
+	 * @return a {@link message.response.DownloadFileResponse
+	 *         DownloadFileResponse} containing the content<br/>
+	 *         OR<br/>
+	 *         a {@link MessageResponse} if an error occurred
+	 * @throws IOException
+	 *             if an I/O error occurs
 	 * @see model.DownloadTicket
 	 */
 	Response download(String filename) throws IOException;
@@ -106,23 +119,27 @@ public interface IClientCli {
 	 * {@code !upload &lt;filename&gt;}<br/>
 	 * <b>Response:</b><br/>
 	 * {@code !upload &lt;message&gt;}<br/>
-	 *
-	 * @param filename the name of the file to upload from the client's shared folder
+	 * 
+	 * @param filename
+	 *            the name of the file to upload from the client's shared folder
 	 * @return message stating whether the upload was successful
-	 * @throws IOException if an I/O error occurs
+	 * @throws IOException
+	 *             if an I/O error occurs
 	 */
 	MessageResponse upload(String filename) throws IOException;
 
 	/**
-	 * Performs a logout if necessary and closes open connections between client and proxy.
+	 * Performs a logout if necessary and closes open connections between client
+	 * and proxy.
 	 * <p/>
 	 * <b>Request</b>:<br/>
 	 * {@code !logout}<br/>
 	 * <b>Response:</b><br/>
 	 * {@code !logout &lt;message&gt;}<br/>
-	 *
+	 * 
 	 * @return message stating whether the logout was successful
-	 * @throws IOException if an I/O error occurs
+	 * @throws IOException
+	 *             if an I/O error occurs
 	 */
 	MessageResponse logout() throws IOException;
 
@@ -130,16 +147,78 @@ public interface IClientCli {
 	 * Performs a shutdown of the client and release all resources.<br/>
 	 * Shutting down an already terminated client has no effect.
 	 * <p/>
-	 * Logout the user if necessary and be sure to release all resources, stop all threads and close any open sockets.
+	 * Logout the user if necessary and be sure to release all resources, stop
+	 * all threads and close any open sockets.
 	 * <p/>
 	 * E.g.:
+	 * 
 	 * <pre>
 	 * &gt; !exit
 	 * Shutting down client now
 	 * </pre>
-	 *
+	 * 
 	 * @return exit message
-	 * @throws IOException if an I/O error occurs
+	 * @throws IOException
+	 *             if an I/O error occurs
 	 */
 	MessageResponse exit() throws IOException;
+
+	/**
+	 * Sends the user's public key to the proxy
+	 * 
+	 * @param user
+	 *            != null, name of the user
+	 * @return MessageResponse, showing the success.
+	 * @throws IOException
+	 */
+	MessageResponse setUserPublicKey(String user) throws IOException;
+
+	/**
+	 * Returns the proxy's public key
+	 * 
+	 * @return MessageResponse, containing the public key.
+	 * @throws IOException
+	 */
+	MessageResponse getProxyPublicKey() throws IOException;
+
+	/**
+	 * Subscribes to a file, so that the client receives a notification in case
+	 * the file gets downloaded as often as noOfDls times.
+	 * 
+	 * @param filename
+	 *            != null, name of the file
+	 * @param noOfDls
+	 *            > 0, number of dls, after notification is sent
+	 * @return a MessageResponse, displaying the notification text.
+	 * @throws IOException
+	 */
+	MessageResponse subscribe(String filename, int noOfDls) throws IOException;
+
+	/**
+	 * Returns a response, showing the top three downloads according to the
+	 * overall number of downloads from all servers
+	 * 
+	 * @return MessageResponse, containing a message displaying the list, sorted
+	 *         descendingly.
+	 * @throws IOException
+	 */
+	MessageResponse topThreeDownloads() throws IOException;
+
+	/**
+	 * Returns the write-quorum, which is a central part of Gifford's scheme.
+	 * 
+	 * @return MessageResponse, containing a message displaying the
+	 *         write-quorum.
+	 * @throws IOException
+	 */
+	MessageResponse writeQuorum() throws IOException;
+
+	/**
+	 * Returns the read-quorum, which is a central part of Gifford's scheme.
+	 * 
+	 * @return MessageResponse, containing a message displaying the read-quorum
+	 * @throws IOException
+	 */
+	MessageResponse readQuorum() throws IOException;
+
 }

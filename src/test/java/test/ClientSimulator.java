@@ -14,7 +14,8 @@ public class ClientSimulator implements Runnable {
 	private IClientCli c;
 	private FileGenerator f;
 	private Random random;
-	private float[] opRatio; // ratio of operations: up- and downloads and subscriptions
+	private float[] opRatio; // ratio of operations: up- and downloads and
+								// subscriptions
 	private int opInterval; // operations per minute
 	private float uploadRatio; // ratio new file / exisiting file upload
 	private boolean running;
@@ -132,6 +133,16 @@ public class ClientSimulator implements Runnable {
 
 	private void subscribe() throws IOException {
 
+		Response r = c.list();
+
+		if (r instanceof ListResponse) {
+
+			ListResponse list = (ListResponse) r;
+			String[] names = new String[list.getFileNames().size()];
+			list.getFileNames().toArray(names);
+			c.subscribe(names[Math.abs(random.nextInt()) % names.length],
+					Math.abs(random.nextInt() % 10));
+		}
 	}
 
 	public void shutdown() {
