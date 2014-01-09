@@ -293,10 +293,10 @@ public class ClientCli implements IClientCli {
 		if (clientReg != null) {
 			try {
 				System.out.print("Unbinding RMI ... ");
-				clientReg.unbind(bindingName);
+				//clientReg.unbind(bindingName);
 				UnicastRemoteObject.unexportObject(rs, true);
 				System.out.print("done\n");
-			} catch (NotBoundException e) {
+			} catch (Exception e) {
 				System.out.println("could not unbind rmi");
 			}
 		}
