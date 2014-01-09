@@ -1,12 +1,10 @@
 package solution.client;
 
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -452,10 +450,12 @@ public class ClientCli implements IClientCli {
 
 	@Command
 	public MessageResponse setUserPublicKey(String user) throws IOException {
-		Path path = Paths.get(keyPath+"/"+user+".pub.pem");
-		byte[] data = null;
+		String filePath = keyPath+"/"+user+".pub.pem";
+		byte[] data = new byte[800];
 		try {
-			data = Files.readAllBytes(path);
+			FileInputStream fis = new FileInputStream(filePath);
+			fis.read(data);
+			fis.close();
 		} catch (IOException e) {
 			System.out.println("could not read/find file "+user+".pub.pem");
 			return new MessageResponse("Failed to trasnmit public key of user: "+user);
