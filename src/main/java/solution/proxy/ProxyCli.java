@@ -35,12 +35,12 @@ public class ProxyCli implements IProxyCli {
 	private ProxyTcpListener pcl;
 	private ProxyUdpListener pfl;
 	private IManagementComponent stub;
-    private IManagementComponent rmc;
-    private int readQuorum;
-    private int writeQuorum;
-    private ConcurrentHashMap<String, FileInfo> files;
-    private Registry reg;
-    private String bindingName;
+	private IManagementComponent rmc;
+	private int readQuorum;
+	private int writeQuorum;
+	private ConcurrentHashMap<String, FileInfo> files;
+	private Registry reg;
+	private String bindingName;
 
 	public static void main(String[] args) {
 		new ProxyCli(new Config("proxy"), new Shell("Proxy", System.out,
@@ -60,18 +60,26 @@ public class ProxyCli implements IProxyCli {
 		try {
 			// register rmi
 			Config mc = new Config("mc");
-			reg = LocateRegistry.createRegistry(mc.getInt("proxy.rmi.port"));
-            rmc = new ManagementComponent();
-            stub = (IManagementComponent) UnicastRemoteObject.exportObject(rmc, 0);
-            bindingName = mc.getString("binding.name");
-            reg.rebind(bindingName, stub);
-            
-            // init managementComponent
-            rmc.setProxyInstance(this);
-            this.readQuorum = 0;
-            this.writeQuorum = 0;
+			try {
+				reg = LocateRegistry.createRegistry(mc.getInt("proxy.rmi.port"));
+			} catch (RemoteException e) {
+				reg = LocateRegistry.getRegistry(mc.getString("proxy.host"), mc.getInt("proxy.rmi.port"));
+			}
+			rmc = new ManagementComponent();
+			try {
+				stub = (IManagementComponent) UnicastRemoteObject.exportObject(rmc, 0);
+			} catch (RemoteException e) {
+				System.out.println(e.getMessage());
+			}
+			bindingName = mc.getString("binding.name");
+			reg.rebind(bindingName, stub);
+
+			// init managementComponent
+			rmc.setProxyInstance(this);
+			this.readQuorum = 0;
+			this.writeQuorum = 0;
 			this.files = new ConcurrentHashMap<String, FileInfo>();
-            
+
 			pfl = new ProxyUdpListener(conf.getInt("udp.port"),
 					conf.getInt("fileserver.timeout"),
 					conf.getInt("fileserver.checkPeriod"), fileservers);
@@ -86,7 +94,7 @@ public class ProxyCli implements IProxyCli {
 		} catch (MissingResourceException e) {
 
 			System.out
-					.println("Invalid usage! Missing resource: " + e.getKey());
+			.println("Invalid usage! Missing resource: " + e.getKey());
 
 			try {
 				exit();
@@ -95,7 +103,7 @@ public class ProxyCli implements IProxyCli {
 			}
 
 		} catch (Exception e) { // No matter what happens, we have to shutdown
-
+			e.printStackTrace();
 			System.out.println("Error, could not set up listeners: "
 					+ e.getClass().getSimpleName() + " - " + e.getMessage()
 					+ "\nShutting down ...");
@@ -103,7 +111,7 @@ public class ProxyCli implements IProxyCli {
 			try {
 				exit();
 			} catch (IOException e1) { // Should not happen!
-				System.out.println("Boy, that escalated quickly!");
+				System.out.println("Boy, that escalated quickly!"+e1.getMessage());
 			}
 		}
 
@@ -132,7 +140,7 @@ public class ProxyCli implements IProxyCli {
 	public void setWriteQuorum(int writeQuorum) {
 		this.writeQuorum = writeQuorum;
 	}
-	
+
 	@Override
 	@Command
 	public Response fileservers() throws IOException {
@@ -157,15 +165,18 @@ public class ProxyCli implements IProxyCli {
 	@Command
 	public MessageResponse exit() throws IOException {
 
-		System.out.print("Unbinding RMI ... ");
-		try {
-			reg.unbind(bindingName);
-		} catch (NotBoundException e) {
-			System.out.println("could not unbind rmi");
+		if (reg != null) {
+			try {
+				System.out.print("Unbinding RMI ... ");
+				reg.unbind(bindingName);
+				UnicastRemoteObject.unexportObject(rmc, true);
+				System.out.print("done\n");
+			} catch (NotBoundException e) {
+				System.out.println("could not unbind rmi");
+			}
 		}
-		UnicastRemoteObject.unexportObject(rmc, true);
-		System.out.print("done\n");
-		
+
+
 		if (pfl != null) {
 			pfl.shutDown();
 		}
