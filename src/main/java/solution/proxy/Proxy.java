@@ -49,6 +49,7 @@ import solution.message.response.CryptedLoginConfirmationResponse;
 import solution.message.response.CryptedLoginResponse;
 import solution.message.response.HMacErrorResponse;
 import solution.message.response.HMacResponse;
+import solution.model.FileInfo;
 import solution.model.MyFileServerInfo;
 import solution.model.MyUserInfo;
 import util.ChecksumUtils;
@@ -238,7 +239,7 @@ public class Proxy extends AbstractServer implements IProxy {
 		 */
 		List<MyFileServerInfo> chosen = new ArrayList<MyFileServerInfo>();
 		int latestVersion = -1;
-
+		
 		for (MyFileServerInfo i : servers) {
 
 			VersionResponse resp = receiveVersionResponseFromServer(i,
@@ -285,6 +286,15 @@ public class Proxy extends AbstractServer implements IProxy {
 					user.modifyCredits(-size);
 					server.use(size);
 
+					// refresh entry in downloaded files proxy
+					FileInfo tmp = this.proxyInstance.getFiles().get(request.getFilename());
+					if (tmp == null) {
+						// this file has not been downloaded yet
+						// create new FileInfo
+						tmp = new FileInfo();
+					}
+					this.proxyInstance.getFiles().put(request.getFilename(), new FileInfo(latestVersion, tmp.getDownloads()+1));
+					
 					return new DownloadTicketResponse(ticket);
 				}
 			}

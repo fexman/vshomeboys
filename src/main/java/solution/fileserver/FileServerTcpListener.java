@@ -10,12 +10,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import solution.AbstractListener;
 import solution.AbstractServer;
 import solution.communication.TcpChannel;
+import solution.model.FileInfo;
 
 public class FileServerTcpListener extends AbstractListener {
 
 	private String path;
 	private File dir;
-	private ConcurrentHashMap<String, Integer> files;
+	private ConcurrentHashMap<String, FileInfo> files;
 	private String pathToHMAC;
 	
 	public FileServerTcpListener(int port, String path, String pathToHMAC) throws SocketException, IOException {
@@ -36,14 +37,15 @@ public class FileServerTcpListener extends AbstractListener {
 	 * and initializes the version number with 0.
 	 * @return
 	 */
-	private ConcurrentHashMap<String, Integer> createFileMap(String path) {
+	private ConcurrentHashMap<String, FileInfo> createFileMap(String path) {
 
-		ConcurrentHashMap<String, Integer> map = new ConcurrentHashMap<String, Integer>();
+		ConcurrentHashMap<String, FileInfo> map = new ConcurrentHashMap<String, FileInfo>();
 
 		for (File f : dir.listFiles()) {
 
 			if (!f.isDirectory()) {
-				map.put(f.getName(), 0);
+				FileInfo fi = new FileInfo();
+				map.put(f.getName(), fi);
 			}
 		}
 

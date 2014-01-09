@@ -12,6 +12,7 @@ import message.response.UserInfoResponse;
 import model.FileServerInfo;
 import model.UserInfo;
 import proxy.IProxyCli;
+import solution.model.FileInfo;
 import solution.model.MyFileServerInfo;
 import solution.model.MyUserInfo;
 import solution.util.UserConfigParser;
@@ -33,24 +34,9 @@ public class ProxyCli implements IProxyCli {
 	private ProxyUdpListener pfl;
 	private IManagementComponent stub;
     private IManagementComponent rmc;
-    public int readQuorum;
-    public int writeQuorum;
-
-	public int getReadQuorum() {
-		return readQuorum;
-	}
-
-	public void setReadQuorum(int readQuorum) {
-		this.readQuorum = readQuorum;
-	}
-
-	public int getWriteQuorum() {
-		return writeQuorum;
-	}
-
-	public void setWriteQuorum(int writeQuorum) {
-		this.writeQuorum = writeQuorum;
-	}
+    private int readQuorum;
+    private int writeQuorum;
+    private ConcurrentHashMap<String, FileInfo> files;
 
 	public static void main(String[] args) {
 		new ProxyCli(new Config("proxy"), new Shell("Proxy", System.out,
@@ -79,13 +65,15 @@ public class ProxyCli implements IProxyCli {
             rmc.setProxyInstance(this);
             this.readQuorum = 0;
             this.writeQuorum = 0;
-			
+			this.files = new ConcurrentHashMap<String, FileInfo>();
+            
 			pfl = new ProxyUdpListener(conf.getInt("udp.port"),
 					conf.getInt("fileserver.timeout"),
 					conf.getInt("fileserver.checkPeriod"), fileservers);
 			pcl = new ProxyTcpListener(conf.getInt("tcp.port"), users,
 					fileservers, conf.getString("key"),
 					conf.getString("keys.dir"), conf.getString("hmac.key"));
+			pcl.setProxyInstance(this);
 			pfl.start();
 			pcl.start();
 			shellThread = new Thread(shell);
@@ -116,6 +104,30 @@ public class ProxyCli implements IProxyCli {
 
 	}
 
+	public ConcurrentHashMap<String, FileInfo> getFiles() {
+		return files;
+	}
+
+	public void setFiles(ConcurrentHashMap<String, FileInfo> files) {
+		this.files = files;
+	}
+
+	public int getReadQuorum() {
+		return readQuorum;
+	}
+
+	public void setReadQuorum(int readQuorum) {
+		this.readQuorum = readQuorum;
+	}
+
+	public int getWriteQuorum() {
+		return writeQuorum;
+	}
+
+	public void setWriteQuorum(int writeQuorum) {
+		this.writeQuorum = writeQuorum;
+	}
+	
 	@Override
 	@Command
 	public Response fileservers() throws IOException {

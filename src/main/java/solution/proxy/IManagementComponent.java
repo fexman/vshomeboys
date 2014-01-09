@@ -4,6 +4,8 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 
+import solution.model.FileInfo;
+
 
 /**
  * RMI-Interface for the Management-Component of the Proxy.
@@ -29,7 +31,7 @@ public interface IManagementComponent extends Remote {
      * @return ArrayList, sorted descendingly by the downloads of the given file.
      * @throws RemoteException, if remote Proxy is not available.
      */
-    public String topThreeDownloads() throws RemoteException;
+    public ArrayList<FileInfo> topThreeDownloads() throws RemoteException;
     
     //TODO: to be implemented
     public String subscribe(String filename, int numberOfDownloads) throws RemoteException;

@@ -3,6 +3,7 @@ package solution.client;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.MissingResourceException;
 
@@ -34,6 +35,7 @@ import solution.communication.TcpChannel;
 import solution.message.request.CryptedLoginRequest;
 import solution.message.response.CryptedLoginConfirmationResponse;
 import solution.message.response.CryptedLoginResponse;
+import solution.model.FileInfo;
 import solution.util.FileUtils;
 import util.Config;
 import cli.Command;
@@ -339,7 +341,32 @@ public class ClientCli implements IClientCli {
 
     @Command
     public MessageResponse topThreeDownloads() throws IOException {
-        return new MessageResponse("Top Three Downloads " + mc.topThreeDownloads());
+    	ArrayList<FileInfo> list = mc.topThreeDownloads();
+    	
+    	if (list.size() == 0) {
+    		return new MessageResponse("No files have been downloaded yet");
+    	} else {
+    		// check if we have top three files, if not display top, top two and so on
+    		String nr1 = "", nr2 = "", nr3 = "", msg = "";
+    		if (list.size() >= 1) {
+    			FileInfo tmp = list.get(0);
+    			nr1 = "1. "+tmp.getFilename()+" "+tmp.getDownloads()+"\n";
+    		}
+    		if (list.size() >= 2) {
+    			FileInfo tmp = list.get(1);
+    			nr2 = "2. "+tmp.getFilename()+" "+tmp.getDownloads()+"\n";
+    		}
+    		if (list.size() >= 3) {
+    			FileInfo tmp = list.get(2);
+    			nr3 = "3. "+tmp.getFilename()+" "+tmp.getDownloads()+"\n";
+    		}
+    		
+    		if (list.size() != 3) {
+    			msg = "3 different files have not been downloaded yet!\n";
+    		}
+    		
+    		return new MessageResponse("Top Three Downloads: \n"+nr1+nr2+nr3+msg);
+    	}
     }
 
     @Command

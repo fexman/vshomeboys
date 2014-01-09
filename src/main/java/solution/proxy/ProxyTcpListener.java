@@ -23,7 +23,8 @@ public class ProxyTcpListener extends AbstractListener {
 	private String pathToPrivateKey;
 	private String pathToKeys;
 	private String pathToHMAC;
-	
+	private ProxyCli proxyInstance;
+
 	public ProxyTcpListener(int port) throws SocketException, IOException {
 		super(port);
 		throw new IOException("Sorry, can't construct ProxyClientListener that way! :(");
@@ -44,7 +45,16 @@ public class ProxyTcpListener extends AbstractListener {
 		Channel tcpChannel = new TcpChannel(socket.accept());
 		tcpChannel.getOperators().add(new OneDirectionalRsaOperator(pathToPrivateKey,"12345"));
 		tcpChannel.getOperators().add(new Base64Operator());
-		return new Proxy(tcpChannel, connections, solution.util.CryptoUtil.getHMACKeyFromPath(pathToHMAC), users, fileservers, pathToPrivateKey, pathToKeys);
+		Proxy p = new Proxy(tcpChannel, connections, solution.util.CryptoUtil.getHMACKeyFromPath(pathToHMAC), users, fileservers, pathToPrivateKey, pathToKeys);
+		p.setProxyInstance(proxyInstance);
+		return p;
 	}
 	
+	public ProxyCli getProxyInstance() {
+		return proxyInstance;
+	}
+
+	public void setProxyInstance(ProxyCli proxyInstance) {
+		this.proxyInstance = proxyInstance;
+	}
 }
