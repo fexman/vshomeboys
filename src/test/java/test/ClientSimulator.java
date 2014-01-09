@@ -11,122 +11,145 @@ import util.FileGenerator;
 
 public class ClientSimulator implements Runnable {
 
-    private IClientCli c;
-    private FileGenerator f;
-    private Random random;
-    private float opRatio; // ratio upload / download
-    private int opInterval;// uploads + downloads = operations per minute
-    private float uploadRatio; // ratio new file / exisiting file upload
-    private boolean running;
+	private IClientCli c;
+	private FileGenerator f;
+	private Random random;
+	private float[] opRatio; // ratio of operations: up- and downloads and subscriptions
+	private int opInterval; // operations per minute
+	private float uploadRatio; // ratio new file / exisiting file upload
+	private boolean running;
 
-    public ClientSimulator(IClientCli c, String username, int uploads, int downloads, int uploadRatio, FileGenerator f) {
+	public ClientSimulator(IClientCli c, String username, int uploads,
+			int downloads, int subscriptions, int uploadRatio, FileGenerator f) {
 
-        this.c = c;
-        this.f = f;
-        running = true;
-        
-        if (uploads + downloads == 0) {
-        	throw new IllegalArgumentException("uploads + downloads must be > 0");
-        }
+		this.c = c;
+		this.f = f;
+		running = true;
 
-        if (uploads > 0 && downloads > 0) {
-        	opRatio = uploads <= downloads ? (float) uploads / downloads : (float) 1 - (downloads / uploads);
-        } else {
-        	opRatio = uploads == 0 ? 0 : 1;
-        }
+		if (uploads == 0 || downloads == 0 || subscriptions == 0) {
+			throw new IllegalArgumentException(
+					"uploads, downloads and subscriptions must not be 0");
+		}
 
-        opInterval = 60000 / (uploads + downloads);                             
-        this.uploadRatio = (float) uploadRatio / 100;
-        random = new Random();
+		opRatio = new float[2];
 
-        try {
+		opRatio[0] = uploads <= (downloads + subscriptions) ? (float) uploads
+				/ (downloads + subscriptions) : (float) 1
+				- ((downloads + subscriptions) / uploads);
+		opRatio[1] = subscriptions <= (uploads + downloads) ? (float) 1
+				- (subscriptions / (uploads + downloads))
+				: (float) (uploads + downloads / subscriptions);
 
-            System.out.println(c.login(username, "12345"));
+		opInterval = 60000 / (uploads + downloads + subscriptions);
+		this.uploadRatio = (float) uploadRatio / 100;
+		random = new Random();
 
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
+		try {
 
-    @Override
-    public void run() {
+			System.out.println(c.login(username, "12345"));
 
-        System.out.println("Starting " + Thread.currentThread());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
 
-        while (running) {
+	@Override
+	public void run() {
 
-            try {
+		System.out.println("Starting " + Thread.currentThread());
 
-                Thread.sleep(opInterval);
-                operation();
+		while (running) {
 
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+			try {
 
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+				Thread.sleep(opInterval);
+				operation();
 
-    private void operation() throws IOException {
+			} catch (InterruptedException e) {
+				e.printStackTrace();
 
-        if (random.nextFloat() < opRatio) {
-            
-            System.out.println(Thread.currentThread() + " begin upload");
-            upload();
-            System.out.println(Thread.currentThread() + " upload complete");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+	}
 
-        } else {
+	private void operation() throws IOException {
 
-            System.out.println(Thread.currentThread() + " begin download");
-            download();
-            System.out.println(Thread.currentThread() + " download complete");
-        }
-    }
+		float r = random.nextFloat();
 
-    private void upload() throws IOException {
+		if (r < opRatio[0]) {
 
-        if (random.nextFloat() < uploadRatio) {
+			System.out.println(Thread.currentThread() + " begin upload");
+			upload();
+			System.out.println(Thread.currentThread() + " upload complete");
 
-            c.upload(f.getExistingFile());
+		} else {
 
-        } else {
+			if (r < opRatio[1]) {
 
-            c.upload(f.getNewFile());
-        }
+				System.out.println(Thread.currentThread() + " begin download");
+				download();
+				System.out.println(Thread.currentThread()
+						+ " download complete");
 
-    }
+			} else {
 
-    private void download() throws IOException {
+				System.out.println(Thread.currentThread()
+						+ " begin subscription");
+				subscribe();
+				System.out.println(Thread.currentThread()
+						+ " subscription complete");
+			}
+		}
+	}
 
-        Response r = c.list();
+	private void upload() throws IOException {
 
-        if (r instanceof ListResponse) {
+		if (random.nextFloat() < uploadRatio) {
 
-            ListResponse list = (ListResponse) r;
-            String[] names = new String[list.getFileNames().size()];
-            list.getFileNames().toArray(names);
-            c.download(names[Math.abs(random.nextInt()) % names.length]);
-        }
-    }
+			c.upload(f.getExistingFile());
 
-    public void shutdown() {
+		} else {
 
-        running = false;
+			c.upload(f.getNewFile());
+		}
 
-        try {
+	}
 
-            Thread.sleep(opInterval);
-            c.logout();
-            c.exit();
-        } catch (IOException e) {
-            e.printStackTrace();
+	private void download() throws IOException {
 
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
+		Response r = c.list();
 
-        System.out.println("Shutting down " + Thread.currentThread());
-    }
+		if (r instanceof ListResponse) {
+
+			ListResponse list = (ListResponse) r;
+			String[] names = new String[list.getFileNames().size()];
+			list.getFileNames().toArray(names);
+			c.download(names[Math.abs(random.nextInt()) % names.length]);
+		}
+	}
+
+	private void subscribe() throws IOException {
+
+	}
+
+	public void shutdown() {
+
+		running = false;
+
+		try {
+
+			Thread.sleep(opInterval);
+			c.logout();
+			c.exit();
+		} catch (IOException e) {
+			e.printStackTrace();
+
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		System.out.println("Shutting down " + Thread.currentThread());
+	}
 }

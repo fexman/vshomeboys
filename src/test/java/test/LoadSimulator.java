@@ -34,6 +34,7 @@ public class LoadSimulator {
 		int noOfClients = confTest.getInt("clients");
 		int uploads = confTest.getInt("uploadsPerMin");
 		int downloads = confTest.getInt("downloadsPerMin");
+		int subscriptions = confTest.getInt("subscriptionsPerMin");
 		int filesize = confTest.getInt("fileSizeKB");
 		int ratio = confTest.getInt("overwriteRatio");
 
@@ -56,7 +57,7 @@ public class LoadSimulator {
 
 			ClientSimulator s = new ClientSimulator(comp.startClient(
 					confClient, new Shell("client", System.out, testInput)),
-					"u" + i, uploads, downloads, ratio, f);
+					"u" + i, uploads, downloads, subscriptions, ratio, f);
 			clients.add(s);
 			threadpool.execute(s);
 		}
