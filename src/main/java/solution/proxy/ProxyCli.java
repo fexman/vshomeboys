@@ -19,6 +19,8 @@ import solution.util.UserConfigParser;
 import util.Config;
 import cli.Command;
 import cli.Shell;
+
+import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
@@ -37,6 +39,8 @@ public class ProxyCli implements IProxyCli {
     private int readQuorum;
     private int writeQuorum;
     private ConcurrentHashMap<String, FileInfo> files;
+    private Registry reg;
+    private String bindingName;
 
 	public static void main(String[] args) {
 		new ProxyCli(new Config("proxy"), new Shell("Proxy", System.out,
@@ -56,10 +60,11 @@ public class ProxyCli implements IProxyCli {
 		try {
 			// register rmi
 			Config mc = new Config("mc");
-			Registry reg = LocateRegistry.createRegistry(mc.getInt("proxy.rmi.port"));
+			reg = LocateRegistry.createRegistry(mc.getInt("proxy.rmi.port"));
             rmc = new ManagementComponent();
             stub = (IManagementComponent) UnicastRemoteObject.exportObject(rmc, 0);
-            reg.rebind(mc.getString("binding.name"), stub);
+            bindingName = mc.getString("binding.name");
+            reg.rebind(bindingName, stub);
             
             // init managementComponent
             rmc.setProxyInstance(this);
@@ -152,6 +157,15 @@ public class ProxyCli implements IProxyCli {
 	@Command
 	public MessageResponse exit() throws IOException {
 
+		System.out.print("Unbinding RMI ... ");
+		try {
+			reg.unbind(bindingName);
+		} catch (NotBoundException e) {
+			System.out.println("could not unbind rmi");
+		}
+		UnicastRemoteObject.unexportObject(rmc, true);
+		System.out.print("done\n");
+		
 		if (pfl != null) {
 			pfl.shutDown();
 		}
