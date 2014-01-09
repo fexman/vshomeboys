@@ -27,19 +27,14 @@ public class ClientSimulator implements Runnable {
 		this.f = f;
 		running = true;
 
-		if (uploads == 0 || downloads == 0 || subscriptions == 0) {
+		if (uploads + downloads + subscriptions == 0) {
 			throw new IllegalArgumentException(
-					"uploads, downloads and subscriptions must not be 0");
+					"uploads + downloads + subscriptions must not be 0");
 		}
 
 		opRatio = new float[2];
-
-		opRatio[0] = uploads <= (downloads + subscriptions) ? (float) uploads
-				/ (downloads + subscriptions) : (float) 1
-				- ((downloads + subscriptions) / uploads);
-		opRatio[1] = subscriptions <= (uploads + downloads) ? (float) 1
-				- (subscriptions / (uploads + downloads))
-				: (float) (uploads + downloads / subscriptions);
+		opRatio[0] = (float) uploads / (uploads + downloads + subscriptions);
+		opRatio[1] = 1 - ((float) subscriptions / (uploads + downloads + subscriptions));
 
 		opInterval = 60000 / (uploads + downloads + subscriptions);
 		this.uploadRatio = (float) uploadRatio / 100;
@@ -81,41 +76,36 @@ public class ClientSimulator implements Runnable {
 
 		if (r < opRatio[0]) {
 
-			System.out.println(Thread.currentThread() + " begin upload");
 			upload();
-			System.out.println(Thread.currentThread() + " upload complete");
 
 		} else {
 
 			if (r < opRatio[1]) {
 
-				System.out.println(Thread.currentThread() + " begin download");
 				download();
-				System.out.println(Thread.currentThread()
-						+ " download complete");
 
 			} else {
 
-				System.out.println(Thread.currentThread()
-						+ " begin subscription");
 				subscribe();
-				System.out.println(Thread.currentThread()
-						+ " subscription complete");
 			}
 		}
 	}
 
 	private void upload() throws IOException {
 
+		String file;
+		
 		if (random.nextFloat() < uploadRatio) {
 
-			c.upload(f.getExistingFile());
+			file = f.getExistingFile();
 
 		} else {
 
-			c.upload(f.getNewFile());
+			file = f.getNewFile();
 		}
-
+		
+		System.out.println("Uploading: " + file);
+		c.upload(file);
 	}
 
 	private void download() throws IOException {
@@ -125,9 +115,12 @@ public class ClientSimulator implements Runnable {
 		if (r instanceof ListResponse) {
 
 			ListResponse list = (ListResponse) r;
-			String[] names = new String[list.getFileNames().size()];
-			list.getFileNames().toArray(names);
-			c.download(names[Math.abs(random.nextInt()) % names.length]);
+			String[] files = new String[list.getFileNames().size()];
+			list.getFileNames().toArray(files);
+			String file = files[Math.abs(random.nextInt()) % files.length];
+
+			System.out.println("Downloading: " +  file);
+			c.download(file);
 		}
 	}
 
@@ -138,10 +131,13 @@ public class ClientSimulator implements Runnable {
 		if (r instanceof ListResponse) {
 
 			ListResponse list = (ListResponse) r;
-			String[] names = new String[list.getFileNames().size()];
-			list.getFileNames().toArray(names);
-			c.subscribe(names[Math.abs(random.nextInt()) % names.length],
-					Math.abs(random.nextInt() % 10));
+			String[] files = new String[list.getFileNames().size()];
+			list.getFileNames().toArray(files);
+			String file = files[Math.abs(random.nextInt()) % files.length];
+			int noOfDls = 1 + Math.abs(random.nextInt()) % 10;
+			System.out.println("Subscribing to: " +  file + ", number of DLs: " + noOfDls);
+			
+			c.subscribe(file, noOfDls);
 		}
 	}
 

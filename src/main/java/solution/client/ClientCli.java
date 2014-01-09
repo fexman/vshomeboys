@@ -373,16 +373,19 @@ public class ClientCli implements IClientCli {
 		return new LoginResponse(LoginResponse.Type.WRONG_CREDENTIALS);
 	}
 
+	@Override
 	@Command
 	public MessageResponse readQuorum() throws IOException {
 		return new MessageResponse("Read-Quorum is set to " + mc.readQuorum());
 	}
 
+	@Override
 	@Command
 	public MessageResponse writeQuorum() throws IOException {
 		return new MessageResponse("Write-Quorum is set to " + mc.writeQuorum());
 	}
 
+	@Override
 	@Command
 	public MessageResponse topThreeDownloads() throws IOException {
 		ArrayList<FileInfo> list = mc.topThreeDownloads();
@@ -413,6 +416,7 @@ public class ClientCli implements IClientCli {
 		}
 	}
 
+	@Override
 	@Command
 	public MessageResponse subscribe(String filename, int noOfDls) throws IOException {
 		if (this.loggedIn == true) {
@@ -427,6 +431,7 @@ public class ClientCli implements IClientCli {
 		}
 	}
 
+	@Override
 	@Command
 	public MessageResponse getProxyPublicKey() throws IOException {
 		byte [] publicKey = mc.getProxyPublicKey();
@@ -448,6 +453,7 @@ public class ClientCli implements IClientCli {
 		return new MessageResponse("Successfully received public key of Proxy.");
 	}
 
+	@Override
 	@Command
 	public MessageResponse setUserPublicKey(String user) throws IOException {
 		String filePath = keyPath+"/"+user+".pub.pem";
