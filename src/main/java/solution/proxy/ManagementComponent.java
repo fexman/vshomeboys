@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
 import solution.model.FileInfo;
+import solution.model.Subscription;
 import util.Config;
 
 
@@ -50,12 +51,6 @@ public class ManagementComponent implements IManagementComponent {
 			// no files downloaded, return empty list
 			return new ArrayList<FileInfo>();
 		}
-	}
-
-	@Override
-	public String subscribe(String filename, int numberOfDownloads) throws RemoteException {
-		// TODO Auto-generated method stub
-		return "subscribed";
 	}
 
 	@Override
@@ -102,4 +97,17 @@ public class ManagementComponent implements IManagementComponent {
 	public void setProxyInstance(ProxyCli i) throws RemoteException {
 		this.proxyInstance = i;
 	}
+
+	@Override
+	public void subscribe(Subscription s) throws RemoteException {
+		ArrayList<Subscription> slist = this.proxyInstance.getS_list();
+		
+		slist.add(s);
+	}
 }
+
+
+
+
+
+

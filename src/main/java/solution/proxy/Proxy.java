@@ -1,6 +1,9 @@
 package solution.proxy;
 
 import java.io.IOException;
+import java.rmi.NotBoundException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.NoSuchAlgorithmException;
@@ -8,6 +11,7 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -39,6 +43,7 @@ import message.response.VersionResponse;
 import model.DownloadTicket;
 import proxy.IProxy;
 import solution.AbstractServer;
+import solution.client.ISubscribe;
 import solution.communication.AESOperator;
 import solution.communication.Channel;
 import solution.communication.BiDirectionalRsaOperator;
@@ -52,11 +57,13 @@ import solution.message.response.HMacResponse;
 import solution.model.FileInfo;
 import solution.model.MyFileServerInfo;
 import solution.model.MyUserInfo;
+import solution.model.Subscription;
 import util.ChecksumUtils;
+import util.Config;
 
 public class Proxy extends AbstractServer implements IProxy {
 	private ProxyCli proxyInstance;
-	
+
 	private ConcurrentHashMap<String, MyUserInfo> users;
 	private ConcurrentHashMap<MyFileServerInfo, Long> fileservers;
 
@@ -68,6 +75,8 @@ public class Proxy extends AbstractServer implements IProxy {
 	private MyUserInfo user;
 	private static final MessageResponse RESPONSE_NOT_LOGGED_IN = new MessageResponse(
 			"Error: No user logged in. Login first!");
+
+	private ISubscribe rs;
 
 	public Proxy(final Channel channel, final Set<AbstractServer> connections,
 			Key HMacKey, final ConcurrentHashMap<String, MyUserInfo> users,
@@ -82,6 +91,17 @@ public class Proxy extends AbstractServer implements IProxy {
 		this.pathToPrivateKey = pathToPrivateKey;
 		this.pathToKeys = pathToKeys;
 		this.proxyInstance = null;
+
+		// bind to client RMI
+		Config mcConfig = new Config("mc");	
+		Registry reg = LocateRegistry.getRegistry(mcConfig.getString("proxy.host"),
+				mcConfig.getInt("proxy.rmi.port")+1);
+		try {
+			rs = (ISubscribe) reg.lookup("clientSubscribe");
+		} catch (NotBoundException e) {
+			System.out.println("Could bind to client RMI");
+		}
+		//////////
 	}
 
 	@Override
@@ -150,7 +170,7 @@ public class Proxy extends AbstractServer implements IProxy {
 			shutDown();
 		}
 
-		
+
 		try {
 			//COMPARE CHALLENGE
 			CryptedLoginConfirmationResponse clcr = (CryptedLoginConfirmationResponse) channel
@@ -239,7 +259,7 @@ public class Proxy extends AbstractServer implements IProxy {
 		 */
 		List<MyFileServerInfo> chosen = new ArrayList<MyFileServerInfo>();
 		int latestVersion = -1;
-		
+
 		for (MyFileServerInfo i : servers) {
 
 			VersionResponse resp = receiveVersionResponseFromServer(i,
@@ -294,6 +314,17 @@ public class Proxy extends AbstractServer implements IProxy {
 						tmp = new FileInfo();
 					}
 					this.proxyInstance.getFiles().put(request.getFilename(), new FileInfo(latestVersion, tmp.getDownloads()+1));
+					/////
+					
+					// send notification for subscriptions
+					for (Subscription s : this.proxyInstance.getS_list()) {
+						if (s.getUser().equals(user.getName())) {
+							if ((tmp.getDownloads()+1) == s.getCount()) {
+								rs.notificate(s);
+							}
+						}
+					}
+					/////
 					
 					return new DownloadTicketResponse(ticket);
 				}
@@ -375,6 +406,18 @@ public class Proxy extends AbstractServer implements IProxy {
 		}
 		user.logout();
 		stopListening();
+		
+		// delete subscriptions
+		Iterator<Subscription> it = this.proxyInstance.getS_list().iterator();
+		while(it.hasNext())
+		{
+		    Subscription s = it.next();
+		    if (s.getUser().equals(user.getName())) {
+				it.remove();
+			}
+		}
+		///////
+		
 		return new MessageResponse("Successfully logged out.");
 	}
 
@@ -401,9 +444,9 @@ public class Proxy extends AbstractServer implements IProxy {
 			Response resp = null;
 			int i = 1;
 			while (!receivedValid && i <= 10) { // Repeat complete
-												// request-operation if haven't
-												// received valid response yet,
-												// will repeat 10 times
+				// request-operation if haven't
+				// received valid response yet,
+				// will repeat 10 times
 
 				fsChannel = new TcpChannel(mfs.getAddress(), mfs.getPort());
 
@@ -524,7 +567,7 @@ public class Proxy extends AbstractServer implements IProxy {
 		java.util.Collections.sort(servers);
 		return servers;
 	}
- 
+
 	/**
 	 * Returns a List of the first n available (online) fileservers, sorted
 	 * ascendingly by their usage.
@@ -563,8 +606,9 @@ public class Proxy extends AbstractServer implements IProxy {
 
 		return onlineFileServers().size();
 	}
-	
+
 	public void setProxyInstance(ProxyCli i) {
 		this.proxyInstance = i;
 	}
+
 }

@@ -41,15 +41,20 @@ import solution.message.request.CryptedLoginRequest;
 import solution.message.response.CryptedLoginConfirmationResponse;
 import solution.message.response.CryptedLoginResponse;
 import solution.model.FileInfo;
+import solution.model.Subscription;
 import solution.util.FileUtils;
 import util.Config;
 import cli.Command;
 import cli.Shell;
 import client.IClientCli;
 import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
+
 import solution.proxy.IManagementComponent;
+import solution.proxy.ManagementComponent;
 
 public class ClientCli implements IClientCli {
 
@@ -62,6 +67,11 @@ public class ClientCli implements IClientCli {
 	private String keyPath;
 	private String proxyKeyPath;
 	private IManagementComponent mc;
+	private Registry clientReg;
+	private ISubscribe stub;
+	private ISubscribe rs;
+	private String bindingName;
+	private String username;
 
 	public static void main (String[] args) {
 		try {
@@ -84,10 +94,29 @@ public class ClientCli implements IClientCli {
 
 			loggedIn = false;
 
-			Config mcConfig = new Config("mc");
+			// connect to server rmi
+			Config mcConfig = new Config("mc");	
 			Registry reg = LocateRegistry.getRegistry(mcConfig.getString("proxy.host"),
 					mcConfig.getInt("proxy.rmi.port"));
 			mc = (IManagementComponent) reg.lookup(mcConfig.getString("binding.name"));
+			//////////
+
+			// register client rmi
+			int rmi_port = mcConfig.getInt("proxy.rmi.port")+1;
+			try {
+				clientReg = LocateRegistry.createRegistry(rmi_port);
+			} catch (RemoteException e) {
+				clientReg = LocateRegistry.getRegistry(mcConfig.getString("proxy.host"), rmi_port);
+			}
+			rs = new Subscribe();
+			try {
+				stub = (ISubscribe) UnicastRemoteObject.exportObject(rs, 0);
+			} catch (RemoteException e) {
+				System.out.println(e.getMessage());
+			}
+			bindingName = "clientSubscribe";
+			clientReg.rebind(bindingName, stub);
+			///////////
 
 			shell.register(this);
 			shellThread = new Thread(shell);
@@ -192,6 +221,7 @@ public class ClientCli implements IClientCli {
 			return loginfailed();
 		}
 		loggedIn = true; //Login Successfull
+		this.username = username;
 		return lr;
 	}
 
@@ -261,6 +291,17 @@ public class ClientCli implements IClientCli {
 	@Command
 	@Override
 	public MessageResponse exit() throws IOException {
+
+		if (clientReg != null) {
+			try {
+				System.out.print("Unbinding RMI ... ");
+				clientReg.unbind(bindingName);
+				UnicastRemoteObject.unexportObject(rs, true);
+				System.out.print("done\n");
+			} catch (NotBoundException e) {
+				System.out.println("could not unbind rmi");
+			}
+		}
 
 		if (loggedIn) {
 			logout();
@@ -376,7 +417,16 @@ public class ClientCli implements IClientCli {
 
 	@Command
 	public MessageResponse subscribe(String filename, int noOfDls) throws IOException {
-		return new MessageResponse("subscribe: " + mc.subscribe("foo", 1));
+		if (this.loggedIn == true) {
+			Subscription s = new Subscription();
+			s.setCount(noOfDls);
+			s.setFilename(filename);
+			s.setUser(this.username);
+			mc.subscribe(s);
+			return new MessageResponse("Successfully subscribed for file: "+s.getFilename());
+		} else {
+			return new MessageResponse("Please login first!");
+		}
 	}
 
 	@Command

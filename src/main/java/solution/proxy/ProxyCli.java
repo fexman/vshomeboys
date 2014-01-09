@@ -15,6 +15,7 @@ import proxy.IProxyCli;
 import solution.model.FileInfo;
 import solution.model.MyFileServerInfo;
 import solution.model.MyUserInfo;
+import solution.model.Subscription;
 import solution.util.UserConfigParser;
 import util.Config;
 import cli.Command;
@@ -41,7 +42,8 @@ public class ProxyCli implements IProxyCli {
 	private ConcurrentHashMap<String, FileInfo> files;
 	private Registry reg;
 	private String bindingName;
-
+	private ArrayList<Subscription> s_list;
+	
 	public static void main(String[] args) {
 		new ProxyCli(new Config("proxy"), new Shell("Proxy", System.out,
 				System.in));
@@ -56,7 +58,8 @@ public class ProxyCli implements IProxyCli {
 		fileservers = new ConcurrentHashMap<MyFileServerInfo, Long>();
 
 		this.shell.register(this);
-
+		s_list = new ArrayList<Subscription>();
+		
 		try {
 			// register rmi
 			Config mc = new Config("mc");
@@ -73,7 +76,8 @@ public class ProxyCli implements IProxyCli {
 			}
 			bindingName = mc.getString("binding.name");
 			reg.rebind(bindingName, stub);
-
+			/////
+			
 			// init managementComponent
 			rmc.setProxyInstance(this);
 			this.readQuorum = 0;
@@ -115,30 +119,6 @@ public class ProxyCli implements IProxyCli {
 			}
 		}
 
-	}
-
-	public ConcurrentHashMap<String, FileInfo> getFiles() {
-		return files;
-	}
-
-	public void setFiles(ConcurrentHashMap<String, FileInfo> files) {
-		this.files = files;
-	}
-
-	public int getReadQuorum() {
-		return readQuorum;
-	}
-
-	public void setReadQuorum(int readQuorum) {
-		this.readQuorum = readQuorum;
-	}
-
-	public int getWriteQuorum() {
-		return writeQuorum;
-	}
-
-	public void setWriteQuorum(int writeQuorum) {
-		this.writeQuorum = writeQuorum;
 	}
 
 	@Override
@@ -190,5 +170,36 @@ public class ProxyCli implements IProxyCli {
 
 		return new MessageResponse("");
 	}
+	
+	public ConcurrentHashMap<String, FileInfo> getFiles() {
+		return files;
+	}
 
+	public void setFiles(ConcurrentHashMap<String, FileInfo> files) {
+		this.files = files;
+	}
+
+	public int getReadQuorum() {
+		return readQuorum;
+	}
+
+	public void setReadQuorum(int readQuorum) {
+		this.readQuorum = readQuorum;
+	}
+
+	public int getWriteQuorum() {
+		return writeQuorum;
+	}
+
+	public void setWriteQuorum(int writeQuorum) {
+		this.writeQuorum = writeQuorum;
+	}
+
+	public ArrayList<Subscription> getS_list() {
+		return s_list;
+	}
+
+	public void setS_list(ArrayList<Subscription> s_list) {
+		this.s_list = s_list;
+	}
 }

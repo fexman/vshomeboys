@@ -5,6 +5,7 @@ import java.rmi.RemoteException;
 import java.util.ArrayList;
 
 import solution.model.FileInfo;
+import solution.model.Subscription;
 
 
 /**
@@ -33,8 +34,12 @@ public interface IManagementComponent extends Remote {
      */
     public ArrayList<FileInfo> topThreeDownloads() throws RemoteException;
     
-    //TODO: to be implemented
-    public String subscribe(String filename, int numberOfDownloads) throws RemoteException;
+    /**
+     * Subscribes user to a file
+     * @param s
+     * @throws RemoteException
+     */
+    public void subscribe(Subscription s) throws RemoteException;
 
     /**
      * Gets the public key from the proxy
