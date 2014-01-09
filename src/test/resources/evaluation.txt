@@ -1,0 +1,8 @@
+Windows 7 64-Bit
+2 x 2.8 GHz
+8GB RAM
+
+Limits:
+
+Groesster erfolgreicher Test lief 15min mit 40 Clients, je 30 Up- und Downloads pro Minute, einer Filesize von 20 kB und einem
+Overwrite-Ratio von 99%. Beim Test mit 80% Overwrite-Ratio war der Speicher (Heap) nach 5 Minuten voll.
