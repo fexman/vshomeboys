@@ -12,12 +12,20 @@ import message.response.UserInfoResponse;
 import model.FileServerInfo;
 import model.UserInfo;
 import proxy.IProxyCli;
+import solution.model.FileInfo;
 import solution.model.MyFileServerInfo;
 import solution.model.MyUserInfo;
+import solution.model.Subscription;
 import solution.util.UserConfigParser;
 import util.Config;
 import cli.Command;
 import cli.Shell;
+
+import java.rmi.NotBoundException;
+import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
+import java.rmi.server.UnicastRemoteObject;
 
 public class ProxyCli implements IProxyCli {
 
@@ -27,7 +35,15 @@ public class ProxyCli implements IProxyCli {
 	private Thread shellThread;
 	private ProxyTcpListener pcl;
 	private ProxyUdpListener pfl;
-
+	private IManagementComponent stub;
+	private IManagementComponent rmc;
+	private int readQuorum;
+	private int writeQuorum;
+	private ConcurrentHashMap<String, FileInfo> files;
+	private Registry reg;
+	private String bindingName;
+	private ArrayList<Subscription> s_list;
+	
 	public static void main(String[] args) {
 		new ProxyCli(new Config("proxy"), new Shell("Proxy", System.out,
 				System.in));
@@ -42,14 +58,39 @@ public class ProxyCli implements IProxyCli {
 		fileservers = new ConcurrentHashMap<MyFileServerInfo, Long>();
 
 		this.shell.register(this);
-
+		s_list = new ArrayList<Subscription>();
+		
 		try {
+			// register rmi
+			Config mc = new Config("mc");
+			try {
+				reg = LocateRegistry.createRegistry(mc.getInt("proxy.rmi.port"));
+			} catch (RemoteException e) {
+				reg = LocateRegistry.getRegistry(mc.getString("proxy.host"), mc.getInt("proxy.rmi.port"));
+			}
+			rmc = new ManagementComponent();
+			try {
+				stub = (IManagementComponent) UnicastRemoteObject.exportObject(rmc, 0);
+			} catch (RemoteException e) {
+				System.out.println(e.getMessage());
+			}
+			bindingName = mc.getString("binding.name");
+			reg.rebind(bindingName, stub);
+			/////
+			
+			// init managementComponent
+			rmc.setProxyInstance(this);
+			this.readQuorum = 0;
+			this.writeQuorum = 0;
+			this.files = new ConcurrentHashMap<String, FileInfo>();
+
 			pfl = new ProxyUdpListener(conf.getInt("udp.port"),
 					conf.getInt("fileserver.timeout"),
 					conf.getInt("fileserver.checkPeriod"), fileservers);
 			pcl = new ProxyTcpListener(conf.getInt("tcp.port"), users,
 					fileservers, conf.getString("key"),
 					conf.getString("keys.dir"), conf.getString("hmac.key"));
+			pcl.setProxyInstance(this);
 			pfl.start();
 			pcl.start();
 			shellThread = new Thread(shell);
@@ -57,7 +98,7 @@ public class ProxyCli implements IProxyCli {
 		} catch (MissingResourceException e) {
 
 			System.out
-					.println("Invalid usage! Missing resource: " + e.getKey());
+			.println("Invalid usage! Missing resource: " + e.getKey());
 
 			try {
 				exit();
@@ -66,7 +107,7 @@ public class ProxyCli implements IProxyCli {
 			}
 
 		} catch (Exception e) { // No matter what happens, we have to shutdown
-
+			e.printStackTrace();
 			System.out.println("Error, could not set up listeners: "
 					+ e.getClass().getSimpleName() + " - " + e.getMessage()
 					+ "\nShutting down ...");
@@ -74,7 +115,7 @@ public class ProxyCli implements IProxyCli {
 			try {
 				exit();
 			} catch (IOException e1) { // Should not happen!
-				System.out.println("Boy, that escalated quickly!");
+				System.out.println("Boy, that escalated quickly!"+e1.getMessage());
 			}
 		}
 
@@ -104,6 +145,18 @@ public class ProxyCli implements IProxyCli {
 	@Command
 	public MessageResponse exit() throws IOException {
 
+		if (reg != null) {
+			try {
+				System.out.print("Unbinding RMI ... ");
+				reg.unbind(bindingName);
+				UnicastRemoteObject.unexportObject(rmc, true);
+				System.out.print("done\n");
+			} catch (NotBoundException e) {
+				System.out.println("could not unbind rmi");
+			}
+		}
+
+
 		if (pfl != null) {
 			pfl.shutDown();
 		}
@@ -117,5 +170,36 @@ public class ProxyCli implements IProxyCli {
 
 		return new MessageResponse("");
 	}
+	
+	public ConcurrentHashMap<String, FileInfo> getFiles() {
+		return files;
+	}
 
+	public void setFiles(ConcurrentHashMap<String, FileInfo> files) {
+		this.files = files;
+	}
+
+	public int getReadQuorum() {
+		return readQuorum;
+	}
+
+	public void setReadQuorum(int readQuorum) {
+		this.readQuorum = readQuorum;
+	}
+
+	public int getWriteQuorum() {
+		return writeQuorum;
+	}
+
+	public void setWriteQuorum(int writeQuorum) {
+		this.writeQuorum = writeQuorum;
+	}
+
+	public ArrayList<Subscription> getS_list() {
+		return s_list;
+	}
+
+	public void setS_list(ArrayList<Subscription> s_list) {
+		this.s_list = s_list;
+	}
 }

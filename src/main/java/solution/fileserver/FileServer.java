@@ -20,16 +20,17 @@ import model.DownloadTicket;
 import server.IFileServer;
 import solution.AbstractServer;
 import solution.communication.TcpChannel;
+import solution.model.FileInfo;
 import solution.util.FileUtils;
 import util.ChecksumUtils;
 
 public class FileServer extends AbstractServer implements IFileServer {
 
 	private final String path;
-	ConcurrentHashMap<String, Integer> files;
+	ConcurrentHashMap<String, FileInfo> files;
 
 	public FileServer(final TcpChannel tcpChannel, Set<AbstractServer> connections, Key HMacKey, String path,
-			ConcurrentHashMap<String, Integer> files) throws IOException {
+			ConcurrentHashMap<String, FileInfo> files) throws IOException {
 		super(tcpChannel, connections, HMacKey);
 		this.path = path;
 		this.files = files;
@@ -84,7 +85,7 @@ public class FileServer extends AbstractServer implements IFileServer {
 		println("Got version request for: " + filename);
 
 		if (files.containsKey(filename)) {
-			return new VersionResponse(request.getFilename(), files.get(request.getFilename()));
+			return new VersionResponse(request.getFilename(), files.get(request.getFilename()).getVersion());
 		} else {
 			return new VersionResponse(request.getFilename(), -1);
 		}
@@ -115,7 +116,8 @@ public class FileServer extends AbstractServer implements IFileServer {
 	 * @param version
 	 */
 	private void versionFile(String filename, int version) {
-
-		files.put(filename, version);
+		FileInfo fi = files.get(filename);
+		fi.setVersion(version);
+		files.put(filename, fi);
 	}
 }
