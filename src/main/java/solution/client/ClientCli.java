@@ -52,7 +52,6 @@ import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 
 import solution.proxy.IManagementComponent;
-import solution.proxy.ManagementComponent;
 
 public class ClientCli implements IClientCli {
 
@@ -212,7 +211,6 @@ public class ClientCli implements IClientCli {
 
 		LoginResponse lr;
 		try {
-			//TODO Fexi weiß worums geht.
 			lr = (LoginResponse) proxyChannel.receive();
 		} catch (ClassCastException e) {
 			System.out.println("Last conformation was not as expected!");

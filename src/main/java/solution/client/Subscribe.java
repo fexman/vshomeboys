@@ -3,7 +3,6 @@ package solution.client;
 import java.rmi.RemoteException;
 
 import solution.model.Subscription;
-import solution.proxy.Proxy;
 
 public class Subscribe implements ISubscribe {
 
